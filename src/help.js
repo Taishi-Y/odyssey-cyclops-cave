@@ -64,7 +64,7 @@ export class HelpScreen {
         <div class="page" data-page="hud">
           <table><tr class="cols"><th></th><td>Where</td><td>Meaning</td></tr>${HUD.map(([a, b, c]) => `<tr><th>${a}</th><td class="where">${b}</td><td>${c}</td></tr>`).join('')}</table>
         </div>
-        <div class="foot">H / F1 / Esc to close · ← → to change tab</div>
+        <div class="foot">H / F1 / Esc to close · ← → to change tab<br><small>Music: "Ossuary 6 - Air", "Dark Fog" by Kevin MacLeod (incompetech.com), CC BY 4.0</small></div>
       </div>`;
     document.body.appendChild(el);
     this.el = el;

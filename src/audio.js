@@ -128,7 +128,7 @@ export class Audio {
   setTension(x) { // 0..1
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.drone.gain.setTargetAtTime(0.25 + x * 0.9, t, 1.5);
+    this.drone.gain.setTargetAtTime(0, t, 1.5); // the synth drone is replaced by the music tracks (score.js)
     this.droneFilter.frequency.setTargetAtTime(300 + x * 1600, t, 1.0);
     this.scoreTension(x);
   }
