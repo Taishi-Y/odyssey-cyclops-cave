@@ -47,6 +47,38 @@ window.__game = game;
 const lightPool = createLightPool(scene, camera);
 lightPool.update(1);
 world.updaters.push((dt) => lightPool.update(dt));
+// phones: the desktop look is far too heavy (≈500 MB of textures, a cube shadow map re-rendering ~1M skinned
+// triangles six times a frame). Keep the game, drop the expensive extras. ?q=high keeps everything.
+if (mobile && q !== 'high') lightenForMobile();
+function lightenForMobile() {
+  renderer.shadowMap.enabled = false;
+  const seen = new Set();
+  const shrink = (tex, max) => {
+    if (!tex || seen.has(tex)) return; seen.add(tex);
+    const img = tex.image;
+    if (!img || !(img.width > max || img.height > max) || !('width' in img) || img.data) return;
+    const k = max / Math.max(img.width, img.height);
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+    try { c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); } catch { return; }
+    img.close?.();
+    tex.image = c; tex.needsUpdate = true;
+  };
+  scene.traverse((o) => {
+    if (o.isLight) o.castShadow = false;
+    if (!o.isMesh) return;
+    o.castShadow = false;
+    // the museum-scan helmets are 105k triangles each
+    for (const m of [].concat(o.material)) {
+      if (!m) continue;
+      if (/^helmet/.test(m.name || '')) o.visible = false;
+      shrink(m.map, 1024); shrink(m.emissiveMap, 512);
+      for (const key of ['normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'bumpMap', 'displacementMap']) shrink(m[key], 512);
+    }
+  });
+  // the heat haze is one more full-screen pass
+  for (const p of post.composer.passes) if (p.effects?.includes(post.haze)) p.enabled = false;
+}
 // precompile shaders to avoid hitches
 renderer.compile(scene, camera);
 

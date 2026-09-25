@@ -34,5 +34,7 @@
 </div>
 <script>window.__errs=[];addEventListener("error",e=>__errs.push(e.message+" @"+(e.filename||"")+":"+e.lineno));addEventListener("unhandledrejection",e=>__errs.push("REJ "+(e.reason&&e.reason.stack||e.reason)));</script>
 <script type="module" src="/src/main.js"></script>
+<div id="rotate"><div class="ico">📱</div>ROTATE YOUR PHONE<br><small style="font-size:12px;letter-spacing:0.1em;color:#9a8c78;margin-top:8px;display:block">Play in landscape</small></div>
+<script>if (new URLSearchParams(location.search).has('touch') || (matchMedia('(pointer: coarse)').matches && 'ontouchstart' in window)) { document.body.classList.add('touch'); document.getElementById('start').textContent = 'TAP TO BEGIN'; }</script>
 </body>
 </html>
