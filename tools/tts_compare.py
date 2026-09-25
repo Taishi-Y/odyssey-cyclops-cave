@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+import os, sys
 """A/B panic lines: Gemini 3.8 Flash TTS (designed voice) vs Fish Audio S2.1 Pro.
 Writes public/voice-test/*.{wav,mp3} and public/voice-preview.html"""
 import base64, json, pathlib, plistlib, sys, urllib.request, concurrent.futures as cf
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "voice-test"; OUT.mkdir(parents=True, exist_ok=True)
-GK = next(l.split("=", 1)[1].strip().strip('"') for l in pathlib.Path("~/Projects/xnobasu/.env.local").expanduser().read_text().splitlines() if l.startswith("GEMINI_API_KEY="))
+GK = os.environ.get("GEMINI_API_KEY") or sys.exit("set GEMINI_API_KEY")
 FK = plistlib.load(open(pathlib.Path("~/Projects/Inko/Inko/Secrets.plist").expanduser(), "rb"))["FISH_API_KEY"]
 GV = json.load(open("/tmp/tts/voices.json"))
 

@@ -2,7 +2,7 @@
 """Generate character voice lines with Gemini 3.8 Flash TTS.
 
 usage: python3 tools/tts.py tools/voice-lines.json public/assets/voice
-Key: GEMINI_API_KEY env, or falls back to ~/Projects/xnobasu/.env.local
+Key: GEMINI_API_KEY env
 """
 import base64, json, os, pathlib, sys, urllib.request
 
@@ -14,9 +14,6 @@ def api_key():
     k = os.environ.get("GEMINI_API_KEY")
     if k:
         return k
-    for line in pathlib.Path("~/Projects/xnobasu/.env.local").expanduser().read_text().splitlines():
-        if line.startswith("GEMINI_API_KEY="):
-            return line.split("=", 1)[1].strip().strip('"')
     sys.exit("no GEMINI_API_KEY")
 
 

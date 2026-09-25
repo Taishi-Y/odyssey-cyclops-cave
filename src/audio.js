@@ -28,7 +28,7 @@ export class Audio {
     this.loadVoice();
     this.loadCrewVoices();
   }
-  // Polyphemus' real voice (Bill Irwin, from the YouTube clip cTEaP8VxN6o): the prayer to Poseidon.
+  // Optional local-only voice sample for Polyphemus (not distributed; the game runs without it).
   // Phrases (sec): 0.15-2.35 / 2.5-6.65 / 6.75-10.15 / 10.2-13.6
   loadVoice() {
     fetch('assets/audio/cyclops_voice.mp3').then((r) => r.arrayBuffer()).then((a) => this.ctx.decodeAudioData(a)).then((b) => (this.voiceBuf = b)).catch(() => {});

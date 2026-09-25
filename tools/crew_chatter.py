@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os, sys
 """Bake the crew's idle chatter with Gemini 3.8 Flash TTS (same designed voices as crew_voices.py).
 
   python3 tools/crew_chatter.py            # generate everything missing
@@ -15,7 +16,7 @@ import base64, json, pathlib, random, subprocess, sys, urllib.request, urllib.er
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "assets" / "voice" / "chat"; OUT.mkdir(parents=True, exist_ok=True)
 RAW = ROOT / "tools" / ".raw_voice" / "chat"; RAW.mkdir(parents=True, exist_ok=True)
-GK = next(l.split("=", 1)[1].strip().strip('"') for l in pathlib.Path("~/Projects/xnobasu/.env.local").expanduser().read_text().splitlines() if l.startswith("GEMINI_API_KEY="))
+GK = os.environ.get("GEMINI_API_KEY") or sys.exit("set GEMINI_API_KEY")
 VID = json.load(open(ROOT / "tools" / "gemini-voices.json"))
 CREW = ["deep2", "deep3", "crewC", "crewD", "crewE", "crewF", "tenor", "mid", "wiry"]  # same index as crew_voices.py
 

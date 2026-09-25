@@ -14,7 +14,7 @@ import base64, json, pathlib, random, subprocess, sys, tempfile, urllib.request,
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "assets" / "voice"; OUT.mkdir(parents=True, exist_ok=True)
-GK = next(l.split("=", 1)[1].strip().strip('"') for l in pathlib.Path("~/Projects/xnobasu/.env.local").expanduser().read_text().splitlines() if l.startswith("GEMINI_API_KEY="))
+GK = os.environ.get("GEMINI_API_KEY") or sys.exit("set GEMINI_API_KEY")
 VID = json.load(open(ROOT / "tools" / "gemini-voices.json"))
 CREW = ["deep2", "deep3", "crewC", "crewD", "crewE", "crewF", "tenor", "mid", "wiry"]  # crew voices A-I, low to high mixed
 RAW = ROOT / "tools" / ".raw_voice"; RAW.mkdir(exist_ok=True)

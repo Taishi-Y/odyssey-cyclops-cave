@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os, sys
 """Deepest-voice, max-panic takes with Gemini 3.8 Flash TTS.
 Writes public/voice-deep/*.wav and public/voice-preview.html"""
 import base64, json, pathlib, subprocess, urllib.request, wave, concurrent.futures as cf
@@ -6,7 +7,7 @@ import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "voice-deep"; OUT.mkdir(parents=True, exist_ok=True)
-GK = next(l.split("=", 1)[1].strip().strip('"') for l in pathlib.Path("~/Projects/xnobasu/.env.local").expanduser().read_text().splitlines() if l.startswith("GEMINI_API_KEY="))
+GK = os.environ.get("GEMINI_API_KEY") or sys.exit("set GEMINI_API_KEY")
 V = json.load(open("/tmp/tts/voices.json"))
 VOICES = {"deep2": V["deep2"], "deep3": V["deep3"], "prev": V["sailor"]}
 

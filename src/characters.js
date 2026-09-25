@@ -8,7 +8,7 @@ import { retargetClips } from './retarget.js';
 const loader = new GLTFLoader();
 const texL = new THREE.TextureLoader();
 let XBOT = null, HEAD = null, CYC = null, SOL = null, CLIPS = null, HELM = null, ODY = null;
-// crew built from the film cast (work/ai3d/crew): Meshy image-to-3D + Odysseus skeleton transferred in Blender
+// crew models (work/ai3d/crew): Meshy image-to-3D + Odysseus skeleton transferred in Blender
 export const CREW_MODELS = ['eurylochus', 'polites', 'elpenor'];
 // museum-scan helmet (helmet.glb is fitted to odysseus); per-head fit from work/helmet_fit.py (Blender z-up)
 const HELMET_FIT = { odysseus: [1.11, -0.014, 1.59199], eurylochus: [1.18, -0.014, 1.59268], polites: [1.16, -0.002, 1.59244], elpenor: [1.13, -0.01, 1.59263] };
@@ -177,7 +177,7 @@ export class Cyclops {
     this.lThumb = [1, 2, 3].map((i) => byName(`LeftHandThumb${i}`)).filter(Boolean);
     this.gripL = 0;
     this.grip = 0; this.bite = 0; this.chew = 0;
-    // warm under-light, as if the fire were bouncing up onto his face (the film's close-ups)
+    // warm under-light, as if the fire were bouncing up onto his face
     this.faceLight = new THREE.SpotLight(0xff8a44, 420, height * 0.6, 0.38, 0.7, 2);
     this.faceLight.position.set(0, height * 0.6, height * 0.42);
     this.faceTarget = new THREE.Object3D(); this.faceTarget.position.set(0, height * 0.9, 0);
@@ -193,7 +193,7 @@ export class Cyclops {
     this.eyeGroup.scale.setScalar(k);
     scene.add(this.eyeGroup); this.eyeGroup.updateMatrixWorld(true);
     this.bones.Head.attach(this.eyeGroup);
-    // a lid that slides shut sideways (the film's side-blink)
+    // a lid that slides shut sideways (side-blink)
     this.lid = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), this.skin);
     this.lid.scale.set(E.r * 1.08, E.r * 1.08, E.r * 1.08);
     this.lid.visible = false;
@@ -512,7 +512,7 @@ const bronze = () => makeBronzeMaterial();
 export class Soldier {
   constructor(scene, { torch = false, seed = 0, hero = false, model = null, helmet = false } = {}) {
     const h = 1.74 + Math.sin(seed * 12.9) * 0.06;
-    // hero: Meshy image-to-3D model generated from the film costume (work/ai3d), already wears armour
+    // hero: Meshy image-to-3D model (work/ai3d), already wears armour
     const crewSrc = model && CREW[model];
     const rig = hero ? cloneHuman(ODY, h, 1.70) : crewSrc ? cloneHuman(crewSrc, h, 1.70) : cloneHuman(SOL, h, 1.80);
     const fitKey = hero ? 'odysseus' : crewSrc ? model : null;

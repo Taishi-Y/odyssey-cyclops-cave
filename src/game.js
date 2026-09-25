@@ -148,7 +148,7 @@ export class Game {
     this.clearSpot = clearSpot;
     this.onProgress?.(0.85);
 
-    // the flock (the film used 40 sheep; 10 keeps the cave readable and the frame light)
+    // the flock (10 keeps the cave readable and the frame light)
     this.flock = new Flock(scene, 10, V(12, 0, -7), 3.5);
     this.flock.onBleat = (p) => this.audio.bleat(p);
 

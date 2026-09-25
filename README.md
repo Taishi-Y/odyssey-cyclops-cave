@@ -1,6 +1,6 @@
 # ODYSSEY: The Cave of Polyphemus
 
-A browser 3D game (Three.js) based on the Cyclops cave sequence in Christopher Nolan's The Odyssey.
+A browser 3D game (Three.js) based on the Cyclops episode of Homer's Odyssey (Book 9).
 
 ## Run
     cd ~/Projects/odyssey/game
@@ -44,7 +44,6 @@ Checkpoints: `?phase=night|sleep|blind|gate`
 - Sheep: "Realistic Woolly Sheep - Thick Curled Fleece" (https://sketchfab.com/3d-models/realistic-woolly-sheep-thick-curled-fleece-7e3af9a88cb14eb3851c9f4871bb063b) by Pigcraft (https://sketchfab.com/s8819296), CC-BY 4.0. Decimated and re-baked for the game
 - Animations: X Bot (Mixamo) clips from the three.js examples, retargeted
 - Player / crew locomotion (walk, jog, sprint, crouch, jump): Universal Animation Library by Quaternius (CC0, https://quaternius.itch.io/universal-animation-library), retargeted with hip bob (work/anim/ual_extract.py)
-- Cyclops voice: clip from YouTube cTEaP8VxN6o (film audio, personal use only)
 - Campfire logs: "Campfire Wood Survival Warm and Light" (https://sketchfab.com/3d-models/campfire-wood-survival-warm-and-light-efd0ac8c5cca46bfaae91b3851b9c75f) by digrafstudio (https://sketchfab.com/digrafstudio), CC-BY 4.0. Converted to metal/rough
 - Cheese sacks: "Sack_v2" (https://sketchfab.com/3d-models/sack-v2-74f60f70effb486faf645519b3dae1a9) by TheDrone (https://sketchfab.com/thedrone), CC-BY 4.0
 - Flames: our own Blender Mantaflow sim baked into a flipbook (work/firesim/sim.py, atlas.py)
