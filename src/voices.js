@@ -3,7 +3,7 @@
 // - barks: panic shouts by situation; several nearby men shout over each other in their own voice
 const BASE = (import.meta.env?.BASE_URL || '/') + 'assets/voice/';
 const R = (a, b) => a + Math.random() * (b - a);
-const CREW = ['deep2', 'deep3', 'crewC', 'crewD', 'crewE', 'crewF', 'tenor', 'mid', 'wiry']; // manifest index -> voice name
+const CREW = ['deep2', 'deep3', 'crewC', 'crewD', 'crewE', 'crewF', 'tenor', 'mid', 'wiry', 'maniac', 'zealot']; // manifest index -> voice name (J laughs like a madman, K shrieks prayers)
 export const voiceKey = (v) => (typeof v === 'number' ? CREW[v] : v) ?? 'anon';
 const GAP = 0.35;   // a voice rests at least this long between two takes
 const BUSY = 4;     // at most this many panic barks sound at once
@@ -22,6 +22,14 @@ export function installVoices(Audio) {
     await Promise.all(files.map(async (f) => {
       try { this.crewBufs[f] = await this.ctx.decodeAudioData(await (await fetch(BASE + f)).arrayBuffer()); } catch (e) { /* skip */ }
     }));
+    // idle chatter (tools/crew_chatter.py): stored under 'chat/...' keys in the same buffer table
+    try {
+      this.chatManifest = await (await fetch(BASE + 'chat/manifest.json')).json();
+      await Promise.all(Object.values(this.chatManifest).flat().map(async (c) => {
+        c.f = 'chat/' + c.f.replace(/^chat\//, '');
+        try { this.crewBufs[c.f] = await this.ctx.decodeAudioData(await (await fetch(BASE + c.f)).arrayBuffer()); } catch (e) { /* skip */ }
+      }));
+    } catch (e) { console.warn('chatter missing', e); }
   };
 
   // ---- one mouth per voice: a voice never starts again before its previous take has finished
@@ -106,4 +114,45 @@ export function crewBark(game, cat, { n = 3, near = null, who = null, delay = 0,
     A._barkEnds = (A._barkEnds || []).filter((e) => e > t0); A._barkEnds.push(start + dur);
     t += Math.max(spread, 0.5) * R(0.6, 1.6); // loose, uneven gaps instead of a chorus
   }
+}
+
+// Idle chatter, called every frame. When nothing else is being said the men talk among themselves:
+//   peace : before the giant comes home, relaxed banter every few seconds, often answered by a mate
+//   tense : the giant is inside but calm (no alert, nobody being grabbed), scared whispers now and then
+// Never over a scripted line, a bark or an order, and never a voice over itself.
+export function crewChatter(game, dt) {
+  const A = game.audio; if (!A.ctx || !A.chatManifest) return;
+  const now = A.ctx.currentTime;
+  const cy = game.cy, st = game.cyState;
+  let mood = null;
+  if (game.phase === 'intro' && !cy.root.visible) mood = 'peace';
+  else if (cy.root.visible && game.alertSys?.phase === 'NORMAL' && !st.grabbing && st.mode !== 'script') mood = 'tense';
+  const C = (game._chat ||= { t: 3, reply: null });
+  if (!mood) { C.t = Math.max(C.t, 4); C.reply = null; return; }
+  // someone else has the floor: wait
+  if ((A._lineSrcEnd || 0) > now - 0.5 || A.barksPlaying(now) > 0 || (game._barkAny || 0) > game.time - 1.5) { C.t = Math.max(C.t, 1.5); return; }
+  C.t -= dt; if (C.t > 0) return;
+  const pool = A.chatManifest[mood] || [];
+  const men = game.soldiers.filter((s) => s.alive && s.state !== 'grabbed' && s.state !== 'dead' && !s.escaped && s.voice != null && s.chore?.kind !== 'eat');
+  if (!men.length || !pool.length) { C.t = 3; return; }
+  // a reply comes from a man near the last speaker; otherwise anyone (nearer the player more likely)
+  let cand = men;
+  if (C.reply) cand = men.filter((s) => s !== C.reply && s.root.position.distanceTo(C.reply.root.position) < 8);
+  if (!cand.length) cand = men;
+  const P = game.player.pos;
+  cand = cand.map((s) => [s, s.root.position.distanceTo(P) + Math.random() * 12]).sort((a, b) => a[1] - b[1]).map((a) => a[0]).slice(0, 4)
+    .filter((s) => A.voiceFreeAt(s.voice) <= now);
+  const s = cand[(Math.random() * cand.length) | 0];
+  if (!s) { C.t = 1; return; }
+  const takes = pool.filter((c) => c.v === s.voice && A.crewBufs[c.f] && !A.recentText(c.t));
+  if (!takes.length) { C.t = 0.5; C.reply = null; return; }
+  const c = takes[(Math.random() * takes.length) | 0];
+  const peace = mood === 'peace';
+  const dur = A.playVoiceFile(c.f, { pos: s.root.position.clone().setY(s.root.position.y + 1.6), vol: peace ? 1.0 : 0.9, minG: peace ? 0.2 : 0.12, wet: 0.3 });
+  if (!dur) { C.t = 1; return; }
+  A.markText(c.t); A.claimVoice(s.voice, now, dur);
+  // next line: often a quick answer from someone nearby, else a pause
+  const answer = Math.random() < (peace ? 0.55 : 0.35);
+  C.reply = answer ? s : null;
+  C.t = dur + (answer ? R(0.3, 1.0) : peace ? R(2, 5) : R(6, 12));
 }

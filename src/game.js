@@ -1,4 +1,4 @@
-import { crewBark } from './voices.js';
+import { crewBark, crewChatter } from './voices.js';
 import { equipSwords, updateCrewFight } from './crewfight.js';
 import { updateSquad, squadStep, poseLeader } from './squad.js';
 import * as THREE from 'three';
@@ -140,7 +140,7 @@ export class Game {
         const fl = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 2.2, 0.5) })); s.torchTip.add(fl);
       }
       s.cower = [5, 7, 10].includes(i); // Cleitus, Dorion, Nicon freeze in terror against the wall
-      s.voice = [2, 6, 3, 7, 8, 0, 5, 4, 1, 7, 6, 8][i]; // crew voice A-I (Eurylochus C, Polites tenor, Perimedes D)
+      s.voice = [2, 6, 3, 7, 8, 0, 5, 4, 1, 9, 10, 8][i]; // crew voice A-K (Eurylochus C, Polites tenor, Perimedes D, Megon the laughing madman, Theon the shrieking zealot)
       this.soldiers.push(s);
     });
     equipSwords(this);
@@ -1940,6 +1940,7 @@ export class Game {
     }
     this.doorShut = this.world.boulder.position.distanceTo(this.world.doorClosed) < 2;
     this.updateSoldiers(dt, t);
+    crewChatter(this, dt);
     this.flock.update(dt, t, { player: this.player, cyclops: this.cy, nav: this.nav.man });
     this.frameNo = (this.frameNo || 0) + 1;
     this.updateBleeds(dt);

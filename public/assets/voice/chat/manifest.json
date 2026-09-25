@@ -1,0 +1,236 @@
+{
+ "peace": [
+  {
+   "f": "peace_00_crewE.mp3",
+   "v": 4,
+   "t": "My wife would never believe this."
+  },
+  {
+   "f": "peace_01_deep3.mp3",
+   "v": 1,
+   "t": "Maybe he'll trade us some wine for it."
+  },
+  {
+   "f": "peace_02_crewC.mp3",
+   "v": 2,
+   "t": "Where's the owner, do you think?"
+  },
+  {
+   "f": "peace_03_crewD.mp3",
+   "v": 3,
+   "t": "Careful with that knot, don't drop it."
+  },
+  {
+   "f": "peace_04_crewE.mp3",
+   "v": 4,
+   "t": "Whoever lives here eats better than we do."
+  },
+  {
+   "f": "peace_05_wiry.mp3",
+   "v": 8,
+   "t": "I could get used to this."
+  },
+  {
+   "f": "peace_06_deep2.mp3",
+   "v": 0,
+   "t": "Fill your sacks, lads."
+  },
+  {
+   "f": "peace_07_crewC.mp3",
+   "v": 2,
+   "t": "Must be a shepherd. A rich one."
+  },
+  {
+   "f": "peace_08_crewE.mp3",
+   "v": 4,
+   "t": "Grab a lamb or two, nobody will miss them."
+  },
+  {
+   "f": "peace_09_mid.mp3",
+   "v": 7,
+   "t": "Is anyone keeping watch?"
+  },
+  {
+   "f": "peace_10_deep3.mp3",
+   "v": 1,
+   "t": "Ha! You've got cheese in your beard."
+  },
+  {
+   "f": "peace_11_crewC.mp3",
+   "v": 2,
+   "t": "These pens are cleaner than my house."
+  },
+  {
+   "f": "peace_12_crewD.mp3",
+   "v": 3,
+   "t": "Elpenor, save some for the rest of us!"
+  },
+  {
+   "f": "peace_13_deep2.mp3",
+   "v": 0,
+   "t": "Gods, that's good cheese."
+  },
+  {
+   "f": "peace_14_deep3.mp3",
+   "v": 1,
+   "t": "Hand me that bucket."
+  },
+  {
+   "f": "peace_15_tenor.mp3",
+   "v": 6,
+   "t": "Smells like a goat's armpit in here."
+  },
+  {
+   "f": "peace_16_crewF.mp3",
+   "v": 5,
+   "t": "One more wheel and we go."
+  },
+  {
+   "f": "peace_17_tenor.mp3",
+   "v": 6,
+   "t": "Look at the size of these cheeses!"
+  },
+  {
+   "f": "peace_18_deep2.mp3",
+   "v": 0,
+   "t": "My wife would never believe this."
+  },
+  {
+   "f": "peace_19_mid.mp3",
+   "v": 7,
+   "t": "Maybe he'll trade us some wine for it."
+  },
+  {
+   "f": "peace_20_crewD.mp3",
+   "v": 3,
+   "t": "Where's the owner, do you think?"
+  },
+  {
+   "f": "peace_21_crewF.mp3",
+   "v": 5,
+   "t": "Careful with that knot, don't drop it."
+  },
+  {
+   "f": "peace_22_wiry.mp3",
+   "v": 8,
+   "t": "Whoever lives here eats better than we do."
+  },
+  {
+   "f": "peace_23_crewF.mp3",
+   "v": 5,
+   "t": "I could get used to this."
+  }
+ ],
+ "tense": [
+  {
+   "f": "tense_00_tenor.mp3",
+   "v": 6,
+   "t": "Is he asleep?"
+  },
+  {
+   "f": "tense_01_crewD.mp3",
+   "v": 3,
+   "t": "Did he hear that?"
+  },
+  {
+   "f": "tense_02_mid.mp3",
+   "v": 7,
+   "t": "Where's Odysseus?"
+  },
+  {
+   "f": "tense_03_crewD.mp3",
+   "v": 3,
+   "t": "What do we do now?"
+  },
+  {
+   "f": "tense_04_deep2.mp3",
+   "v": 0,
+   "t": "My legs won't stop shaking."
+  },
+  {
+   "f": "tense_05_deep3.mp3",
+   "v": 1,
+   "t": "Stay close to the wall."
+  },
+  {
+   "f": "tense_06_deep2.mp3",
+   "v": 0,
+   "t": "He can't see us here. Can he?"
+  },
+  {
+   "f": "tense_07_deep3.mp3",
+   "v": 1,
+   "t": "Athena, protect us."
+  },
+  {
+   "f": "tense_08_crewC.mp3",
+   "v": 2,
+   "t": "Quiet! He turned his head."
+  },
+  {
+   "f": "tense_09_mid.mp3",
+   "v": 7,
+   "t": "We should never have come in here."
+  },
+  {
+   "f": "tense_10_wiry.mp3",
+   "v": 8,
+   "t": "Don't move. Don't even breathe."
+  },
+  {
+   "f": "tense_11_crewD.mp3",
+   "v": 3,
+   "t": "Stay together."
+  },
+  {
+   "f": "tense_12_crewF.mp3",
+   "v": 5,
+   "t": "I want to go home."
+  },
+  {
+   "f": "tense_13_crewE.mp3",
+   "v": 4,
+   "t": "How long until morning?"
+  },
+  {
+   "f": "tense_14_crewC.mp3",
+   "v": 2,
+   "t": "Shh. Keep your voice down."
+  },
+  {
+   "f": "tense_15_deep3.mp3",
+   "v": 1,
+   "t": "I can hear him breathing."
+  },
+  {
+   "f": "tense_16_crewE.mp3",
+   "v": 4,
+   "t": "Is he asleep?"
+  },
+  {
+   "f": "tense_17_wiry.mp3",
+   "v": 8,
+   "t": "Did he hear that?"
+  },
+  {
+   "f": "tense_18_crewF.mp3",
+   "v": 5,
+   "t": "Where's Odysseus?"
+  },
+  {
+   "f": "tense_19_crewC.mp3",
+   "v": 2,
+   "t": "What do we do now?"
+  },
+  {
+   "f": "tense_20_deep2.mp3",
+   "v": 0,
+   "t": "My legs won't stop shaking."
+  },
+  {
+   "f": "tense_21_tenor.mp3",
+   "v": 6,
+   "t": "Stay close to the wall."
+  }
+ ]
+}
