@@ -1,6 +1,7 @@
 import { installFoley } from './foley.js';
 import { installSamples, installLowEnd, installBody } from './samples.js';
 import { installVoices } from './voices.js';
+import { installScore } from './score.js';
 // Procedural sound design (WebAudio): cave ambience, fire, giant footsteps, roars, sheep, bow, impacts, score.
 export class Audio {
   constructor() {
@@ -25,6 +26,7 @@ export class Audio {
     this.noiseBuf = this.makeNoise(3);
     this.brownBuf = this.makeBrown(4);
     this.startAmbience();
+    this.startScore(); // eerie low music bed, always playing
     this.loadVoice();
     this.loadCrewVoices();
   }
@@ -128,9 +130,11 @@ export class Audio {
     const t = this.ctx.currentTime;
     this.drone.gain.setTargetAtTime(0.25 + x * 0.9, t, 1.5);
     this.droneFilter.frequency.setTargetAtTime(300 + x * 1600, t, 1.0);
+    this.scoreTension(x);
   }
   update(dt, fireDist) {
     if (!this.ctx) return;
+    this.updateScore(dt);
     this.fireGain.gain.setTargetAtTime(0.28 / (1 + fireDist * 0.35), this.ctx.currentTime, 0.2);
     // random fire pops
     if (Math.random() < dt * 6) this.click(0.08 / (1 + fireDist * 0.3), 2500 + Math.random() * 3000);
@@ -289,5 +293,6 @@ export class Audio {
 installFoley(Audio);
 installSamples(Audio);
 installVoices(Audio);
+installScore(Audio);
 installLowEnd(Audio);
 installBody(Audio);
