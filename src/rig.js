@@ -85,6 +85,7 @@ export class Poser {
   // CCD IK from shoulder to hand toward a world target
   reach(side, target, w) {
     if (w <= 0.001) return;
+    if (this.collide) target = this.clampTarget(target.clone());
     const b = this.b;
     const chain = side === 'R' ? [b.rHand, b.rFore, b.rArm, b.rShoulder] : [b.lHand, b.lFore, b.lArm, b.lShoulder];
     if (chain.some((x) => !x)) return;
@@ -101,5 +102,79 @@ export class Poser {
         rotWorld(bone, axis, ang * w * (k === 3 ? 0.2 : 0.7));
       }
     }
+    if (this.collide) this.elbowOut(chain, w);
+  }
+  // the mixamo clips were made for a slim body: swing each free-hanging arm out from the shoulder until the
+  // elbow, forearm and hand clear the giant's belly, hips and thighs
+  armsClear(skip = {}) {
+    const C = this.collide, b = this.b; if (!C || !b.hips || !b.neck) return;
+    this.frame();
+    const V3 = THREE.Vector3, P = (x) => x.getWorldPosition(new V3());
+    const A = P(b.hips).addScaledVector(this.up, -C.rTorso * 1.1), B = P(b.neck);
+    const body = new THREE.Line3(A, B), tmp = new V3();
+    const legs = [[b.lThigh, b.lShin], [b.rThigh, b.rShin]].filter(([t, s]) => t && s).map(([t, s]) => new THREE.Line3(P(t), P(s)));
+    const pen = (p) => {
+      let d = p.distanceTo(body.closestPointToPoint(p, true, tmp)) - (C.rTorso + C.rHand * 0.6);
+      for (const l of legs) d = Math.min(d, p.distanceTo(l.closestPointToPoint(p, true, tmp)) - (C.rTorso * 0.55 + C.rHand * 0.6));
+      return d;
+    };
+    for (const [side, arm, fore, hand] of [['R', b.rArm, b.rFore, b.rHand], ['L', b.lArm, b.lFore, b.lHand]]) {
+      if (skip[side] || !arm || !fore || !hand) continue;
+      const sp = P(arm), out = sp.clone().sub(P(b.spine1 || b.hips)); out.addScaledVector(this.up, -out.dot(this.up)).normalize();
+      for (let it = 0; it < 10; it++) {
+        const ep = P(fore), hp = P(hand);
+        const worst = Math.min(pen(ep), pen(ep.clone().lerp(hp, 0.5)), pen(hp));
+        if (worst > 0 && it > 0) break;
+        const dir = ep.sub(sp).normalize(), axis = dir.clone().cross(out);
+        if (axis.lengthSq() < 1e-6) break;
+        rotWorld(arm, axis.normalize(), it === 0 ? 0.12 : 0.09);
+      }
+      // a forearm folded across the belly: open the elbow away from the body
+      for (let it = 0; it < 8; it++) {
+        const ep = P(fore), hp = P(hand);
+        if (pen(hp) > 0 && pen(ep.clone().lerp(hp, 0.5)) > 0) break;
+        const push = hp.clone().sub(body.closestPointToPoint(hp, true, tmp)).add(out.clone().multiplyScalar(0.5));
+        push.addScaledVector(this.up, -push.dot(this.up)).normalize();
+        const axis = hp.sub(ep).normalize().cross(push);
+        if (axis.lengthSq() < 1e-6) break;
+        rotWorld(fore, axis.normalize(), 0.1);
+      }
+    }
+  }
+  // keep a reach target outside the body: torso capsule (hips..neck) and head sphere
+  clampTarget(target) {
+    const C = this.collide, b = this.b; if (!C || !b.hips || !b.neck) return target;
+    const A = b.hips.getWorldPosition(new THREE.Vector3()), B = b.neck.getWorldPosition(new THREE.Vector3());
+    const seg = new THREE.Line3(A, B), cp = seg.closestPointToPoint(target, true, new THREE.Vector3());
+    let d = target.clone().sub(cp), r = C.rTorso + C.rHand;
+    if (d.length() < r) {
+      this.frame();
+      d.addScaledVector(this.up, -d.dot(this.up)); // push out sideways/forward, never up or down
+      if (d.lengthSq() < 1e-6) d.copy(this.fwd);
+      if (d.dot(this.fwd) < 0 && Math.abs(d.dot(this.right)) < C.rTorso * 0.6) d.addScaledVector(this.fwd, C.rTorso); // behind the back: go round the front
+      target = cp.addScaledVector(d.normalize(), r);
+    }
+    if (b.head) {
+      const hc = b.head.getWorldPosition(new THREE.Vector3()).addScaledVector(this.up, C.rHead * 0.6);
+      const dh = target.clone().sub(hc), rh = C.rHead + C.rHand * 0.5;
+      if (dh.length() < rh) target = hc.addScaledVector(dh.lengthSq() > 1e-6 ? dh.normalize() : this.fwd, rh);
+    }
+    return target;
+  }
+  // twist the upper arm about the shoulder->hand line (hand stays put) so the elbow points out and down, away from the ribs
+  elbowOut([hand, fore, arm], w) {
+    const sp = arm.getWorldPosition(new THREE.Vector3()), hp = hand.getWorldPosition(new THREE.Vector3()), ep = fore.getWorldPosition(new THREE.Vector3());
+    const axis = hp.clone().sub(sp); if (axis.lengthSq() < 1e-6) return; axis.normalize();
+    const spine = this.b.spine1 || this.b.hips; if (!spine) return;
+    this.frame();
+    const out = sp.clone().sub(spine.getWorldPosition(new THREE.Vector3())); out.addScaledVector(this.up, -out.dot(this.up)).normalize();
+    const pole = out.multiplyScalar(1).addScaledVector(this.up, -0.9).addScaledVector(this.fwd, -0.25);
+    const proj = (v) => v.addScaledVector(axis, -v.dot(axis));
+    const e = proj(ep.clone().sub(sp)), p = proj(pole);
+    if (e.lengthSq() < 1e-6 || p.lengthSq() < 1e-6) return;
+    e.normalize(); p.normalize();
+    let ang = Math.acos(THREE.MathUtils.clamp(e.dot(p), -1, 1));
+    if (e.clone().cross(p).dot(axis) < 0) ang = -ang;
+    rotWorld(arm, axis, ang * w);
   }
 }

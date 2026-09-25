@@ -1,0 +1,163 @@
+# Sound effects
+
+All sounds are from Freesound.org under Creative Commons 0 (public domain). Cut, trimmed and normalized for the game.
+
+- `22416` "Four Heartbeats HQ_BeatSmith.wav" by  (CC0) https://freesound.org/people/Lunardrive/sounds/22416/
+- `22417` "Single Heartbeat HQ_BeatSmith.wav" by  (CC0) https://freesound.org/people/Lunardrive/sounds/22417/
+- `50924` "Vocal Man Hit 'Ohhh'.aif" by  (CC0) https://freesound.org/people/RutgerMuller/sounds/50924/
+- `52668` "Fast Breath.wav" by  (CC0) https://freesound.org/people/KatHakaku/sounds/52668/
+- `60013` "Whoosh" by  (CC0) https://freesound.org/people/qubodup/sounds/60013/
+- `66397` "wood_knock.wav" by  (CC0) https://freesound.org/people/110110010/sounds/66397/
+- `98493` "Walking3_gravel.wav" by  (CC0) https://freesound.org/people/tec_studio/sounds/98493/
+- `103072` "groans.wav" by  (CC0) https://freesound.org/people/iggy1345/sounds/103072/
+- `112557` "Frightened Breathing.aiff" by  (CC0) https://freesound.org/people/nickrave/sounds/112557/
+- `119782` "cinematic_deep_tremor.wav" by  (CC0) https://freesound.org/people/swiftoid/sounds/119782/
+- `128233` "Clothing rustles" by  (CC0) https://freesound.org/people/trettfilms/sounds/128233/
+- `134025` "Necksnap_build.wav" by  (CC0) https://freesound.org/people/danielrutterfilms/sounds/134025/
+- `164572` "Metal pipe on concrete.wav" by  (CC0) https://freesound.org/people/deleted_user_2104797/sounds/164572/
+- `165109` "Low Movie Boom.mp3" by  (CC0) https://freesound.org/people/rickeyc/sounds/165109/
+- `166703` "sea gulls.wav" by  (CC0) https://freesound.org/people/Snapper4298/sounds/166703/
+- `169628` "Male voice screaming loudly" by  (CC0) https://freesound.org/people/Dinsfire/sounds/169628/
+- `171149` "sheep 3.mp3" by  (CC0) https://freesound.org/people/esperar/sounds/171149/
+- `171151` "sheep 2.mp3" by  (CC0) https://freesound.org/people/esperar/sounds/171151/
+- `171152` "sheep 1" by  (CC0) https://freesound.org/people/esperar/sounds/171152/
+- `171943` "Phews.wav" by  (CC0) https://freesound.org/people/esperar/sounds/171943/
+- `172712` "sheep.wav" by  (CC0) https://freesound.org/people/Gitanki/sounds/172712/
+- `174939` "walking on gravel.wav" by  (CC0) https://freesound.org/people/ABouch/sounds/174939/
+- `177242` "Cinematic Impact" by  (CC0) https://freesound.org/people/deleted_user_3277771/sounds/177242/
+- `179365` "Small Rock and Stone Hits.wav" by  (CC0) https://freesound.org/people/lolamadeus/sounds/179365/
+- `180158` "Munching Sound" by  (CC0) https://freesound.org/people/Roland%20Katarn/sounds/180158/
+- `184936` "Cinematic Rumble.flac" by  (CC0) https://freesound.org/people/qubodup/sounds/184936/
+- `190505` "Rocks falling over rocks, over a steep hill, like a cliff.flac" by  (CC0) https://freesound.org/people/gfrog/sounds/190505/
+- `192146` "Bone Crunch Fast.wav" by  (CC0) https://freesound.org/people/BrassKnucklesFilms/sounds/192146/
+- `196723` "SZ_Zombies_05.wav" by  (CC0) https://freesound.org/people/PaulMorek/sounds/196723/
+- `199803` "Quake Short.wav" by  (CC0) https://freesound.org/people/TheMinkman/sounds/199803/
+- `203594` "man scream.ogg" by  (CC0) https://freesound.org/people/insanity54/sounds/203594/
+- `204362` "Groaning Gurgle " by  (CC0) https://freesound.org/people/SoundsExciting/sounds/204362/
+- `205938` "Arrow Impact" by  (CC0) https://freesound.org/people/Twisted_Euphoria/sounds/205938/
+- `212768` "Bass Drop" by  (CC0) https://freesound.org/people/qubodup/sounds/212768/
+- `213181` "Human Heartbeat (60 BPM)" by  (CC0) https://freesound.org/people/FenrirFangs/sounds/213181/
+- `219719` "man-screaming.wav" by  (CC0) https://freesound.org/people/mariateresa_garcia/sounds/219719/
+- `221544` "Wounded man scream" by  (CC0) https://freesound.org/people/joseppujol/sounds/221544/
+- `222517` "Dramatic Hit" by  (CC0) https://freesound.org/people/qubodup/sounds/222517/
+- `222521` "Cracking Earthquake (cracking soil, cracking stone)" by  (CC0) https://freesound.org/people/uagadugu/sounds/222521/
+- `234237` "Eating Juicy Meat.wav" by  (CC0) https://freesound.org/people/ProductionNow/sounds/234237/
+- `234782` "Steam/hiss" by  (CC0) https://freesound.org/people/wubitog/sounds/234782/
+- `235905` "Eating a Toastie.wav" by  (CC0) https://freesound.org/people/squashy555/sounds/235905/
+- `237103` "sqeeeek_sheep.wav" by  (CC0) https://freesound.org/people/sqeeeek/sounds/237103/
+- `243699` "Hidden Wall Opening" by  (CC0) https://freesound.org/people/ertfelda/sounds/243699/
+- `244597` "Gravel/Sand Walking 3" by  (CC0) https://freesound.org/people/Cornwallis89/sounds/244597/
+- `249806` "Dripping Water.wav" by  (CC0) https://freesound.org/people/spookymodem/sounds/249806/
+- `249811` "Crunching Bones.wav" by  (CC0) https://freesound.org/people/spookymodem/sounds/249811/
+- `255111` "Cinematic_Boom_Rhapsodize.wav" by  (CC0) https://freesound.org/people/rhapsodize/sounds/255111/
+- `256862` "Howling Wind" by  (CC0) https://freesound.org/people/Kodack/sounds/256862/
+- `259542` "stabs.wav" by  (CC0) https://freesound.org/people/nicktermer/sounds/259542/
+- `263595` "swoosh.wav" by  (CC0) https://freesound.org/people/PorkMuncher/sounds/263595/
+- `263675` "Bow_release.wav" by  (CC0) https://freesound.org/people/PorkMuncher/sounds/263675/
+- `263786` "Seagull single call" by  (CC0) https://freesound.org/people/steaq/sounds/263786/
+- `268084` "Bass Boom" by  (CC0) https://freesound.org/people/LordHannes/sounds/268084/
+- `271045` "Male Breathing Slow" by  (CC0) https://freesound.org/people/Kodack/sounds/271045/
+- `271245` "Gasp Male" by  (CC0) https://freesound.org/people/bertiehs/sounds/271245/
+- `323526` "Bloody Blade 2.wav" by  (CC0) https://freesound.org/people/Kreastricon62/sounds/323526/
+- `328934` "Cleat scuffle small rocks" by  (CC0) https://freesound.org/people/oscaraudiogeek/sounds/328934/
+- `328935` "Boot scuffle small rocks" by  (CC0) https://freesound.org/people/oscaraudiogeek/sounds/328935/
+- `332058` "Collision" by  (CC0) https://freesound.org/people/qubodup/sounds/332058/
+- `336023` "Rocks.wav" by  (CC0) https://freesound.org/people/adamgryu/sounds/336023/
+- `343412` "Fast breathing, struggle male" by  (CC0) https://freesound.org/people/aslamshoev/sounds/343412/
+- `343741` "cave 02" by  (CC0) https://freesound.org/people/rucisko/sounds/343741/
+- `344407` "Male Gasp 1.wav" by  (CC0) https://freesound.org/people/jawbutch/sounds/344407/
+- `345464` "Male_Medium_Breathing_01" by  (CC0) https://freesound.org/people/Artmasterrich/sounds/345464/
+- `347410` "Monster Roar 02" by  (CC0) https://freesound.org/people/zerokingfull/sounds/347410/
+- `348022` "Water Drop 01" by  (CC0) https://freesound.org/people/LilMati/sounds/348022/
+- `348246` "PUNCH-BOXING-05-REVERB.wav" by  (CC0) https://freesound.org/people/newagesoup/sounds/348246/
+- `349873` "Water Drop 02" by  (CC0) https://freesound.org/people/LilMati/sounds/349873/
+- `352829` "Tomb Door Open, Stone Scrape" by  (CC0) https://freesound.org/people/Kinoton/sounds/352829/
+- `362283` "Sheep bleating" by  (CC0) https://freesound.org/people/zachrau/sounds/362283/
+- `363922` "land.wav" by  (CC0) https://freesound.org/people/kfatehi/sounds/363922/
+- `364709` "Rock on Rock Scrape" by  (CC0) https://freesound.org/people/alegemaate/sounds/364709/
+- `364711` "Stone dropping" by  (CC0) https://freesound.org/people/alegemaate/sounds/364711/
+- `384082` "Foot_Step_grit_Sand.wav" by  (CC0) https://freesound.org/people/savataivanov/sounds/384082/
+- `384918` "Bow Release (Bow and Arrow) 3" by  (CC0) https://freesound.org/people/Ali_6868/sounds/384918/
+- `385966` "Large Swede Stab with Whoosh.wav" by  (CC0) https://freesound.org/people/minituffy/sounds/385966/
+- `388773` "NERVOUS BREATHING.wav" by  (CC0) https://freesound.org/people/ThatMisfit/sounds/388773/
+- `389996` "man holds breath- gasp" by  (CC0) https://freesound.org/people/morganveilleux/sounds/389996/
+- `392668` "Ambience INT water drip dropping cave grotto spooky (quinta da regaleira portugal).flac" by  (CC0) https://freesound.org/people/corkob/sounds/392668/
+- `394004` "Arrows Fly By.mp3" by  (CC0) https://freesound.org/people/DigPro120/sounds/394004/
+- `394180` "Arrow Loose and Flyby" by  (CC0) https://freesound.org/people/saturdaysoundguy/sounds/394180/
+- `398698` "Slow Pebble Tumble.wav" by  (CC0) https://freesound.org/people/bbrocer/sounds/398698/
+- `398908` "Monster Roar 2.wav" by  (CC0) https://freesound.org/people/quadraslayer/sounds/398908/
+- `400900` "Campfire 2_01.aif" by  (CC0) https://freesound.org/people/bobv2/sounds/400900/
+- `401210` "Man screams in pain.mp3" by  (CC0) https://freesound.org/people/stuxer/sounds/401210/
+- `402861` "Gurgled Scream" by  (CC0) https://freesound.org/people/jacksonacademyashmore/sounds/402861/
+- `408141` "Cinematic Low Pitch Impact" by  (CC0) https://freesound.org/people/Jofae/sounds/408141/
+- `417994` "Body fall.wav" by  (CC0) https://freesound.org/people/DylanTheFish/sounds/417994/
+- `427803` "Cinematic Hit With Horns.wav" by  (CC0) https://freesound.org/people/DeVern/sounds/427803/
+- `428073` "Sub Drop Smooth.wav" by  (CC0) https://freesound.org/people/newagesoup/sounds/428073/
+- `430977` "Big impact.wav" by  (CC0) https://freesound.org/people/AudioPapkin/sounds/430977/
+- `431019` "Stone hit" by  (CC0) https://freesound.org/people/CamoMano/sounds/431019/
+- `431316` "BRAAM-HIT" by  (CC0) https://freesound.org/people/vykroft/sounds/431316/
+- `432996` "Male Snore 2.wav" by  (CC0) https://freesound.org/people/mattyharm/sounds/432996/
+- `434550` "breath taken aback.flac" by  (CC0) https://freesound.org/people/TheCurlyOne/sounds/434550/
+- `436470` "ShovelSizzle8_mod.MP3" by  (CC0) https://freesound.org/people/rabban625/sounds/436470/
+- `436525` "Footsteps Gravel Running-Stop" by  (CC0) https://freesound.org/people/KikeVilaplana/sounds/436525/
+- `441593` "Deep Impact" by  (CC0) https://freesound.org/people/Poligonstudio/sounds/441593/
+- `442966` "Dragon Hurt" by  (CC0) https://freesound.org/people/qubodup/sounds/442966/
+- `443817` "39 Tensar Arco.wav" by  (CC0) https://freesound.org/people/checholio/sounds/443817/
+- `443818` "38 Tensar Arco.wav" by  (CC0) https://freesound.org/people/checholio/sounds/443818/
+- `448089` "Zombies eating" by  (CC0) https://freesound.org/people/Breviceps/sounds/448089/
+- `460509` "Hitting in a Face" by  (CC0) https://freesound.org/people/florianreichelt/sounds/460509/
+- `463721` "Burp Monster Zombie groan moan" by  (CC0) https://freesound.org/people/EricsSoundschmiede/sounds/463721/
+- `464839` "Anime Sound Effect - Piercing impact / Stabbing" by  (CC0) https://freesound.org/people/Breviceps/sounds/464839/
+- `466792` "Snoring" by  (CC0) https://freesound.org/people/HogantheLogan/sounds/466792/
+- `488660` "Tumbling Rocks" by  (CC0) https://freesound.org/people/Fission9/sounds/488660/
+- `489901` "Scary Monster Roar #2" by  (CC0) https://freesound.org/people/NicknameLarry/sounds/489901/
+- `490556` "Bow Drawn" by  (CC0) https://freesound.org/people/Paveroux/sounds/490556/
+- `491056` "running_on_gravel.wav" by  (CC0) https://freesound.org/people/sleepskraper/sounds/491056/
+- `504626` "BODY FALL - V HVY - DIRT" by  (CC0) https://freesound.org/people/leonelmail/sounds/504626/
+- `508110` "fire ambience, flames, crackles, pops, burning" by  (CC0) https://freesound.org/people/ahriik/sounds/508110/
+- `510214` "Crawling 1" by  (CC0) https://freesound.org/people/heavenly-roads/sounds/510214/
+- `510917` "Seagulls_short.wav" by  (CC0) https://freesound.org/people/Lydmakeren/sounds/510917/
+- `511194` "Headshot.wav" by  (CC0) https://freesound.org/people/Pablobd/sounds/511194/
+- `511489` "FX_bow&arrow2.wav" by  (CC0) https://freesound.org/people/Lydmakeren/sounds/511489/
+- `511490` "FX_bow&arrow.wav" by  (CC0) https://freesound.org/people/Lydmakeren/sounds/511490/
+- `520276` "Zisa, Relief, Moan, Tired, Exhale_2.wav" by  (CC0) https://freesound.org/people/hisoul/sounds/520276/
+- `521552` "Arrow Impact" by  (CC0) https://freesound.org/people/omerbhatti34/sounds/521552/
+- `521958` "Wet Impact (2)" by  (CC0) https://freesound.org/people/Kastenfrosch/sounds/521958/
+- `528838` "human roar 2" by  (CC0) https://freesound.org/people/th3romeo/sounds/528838/
+- `528839` "human roar 1" by  (CC0) https://freesound.org/people/th3romeo/sounds/528839/
+- `530354` "Stone.wav" by  (CC0) https://freesound.org/people/danielpodlovics/sounds/530354/
+- `530589` "Footsteps_Boots_Gritty_Ground_(Gravel).wav" by  (CC0) https://freesound.org/people/Nox_Sound/sounds/530589/
+- `530699` "Water wave Beach Field-recording 200815_0036.wav" by  (CC0) https://freesound.org/people/szegvari/sounds/530699/
+- `531725` "giant footsteps.mp3" by  (CC0) https://freesound.org/people/Beefmaster69/sounds/531725/
+- `536067` "Bow Loading" by  (CC0) https://freesound.org/people/EminYILDIRIM/sounds/536067/
+- `543243` "vocals panting.WAV" by  (CC0) https://freesound.org/people/myfreesoundaccount1998/sounds/543243/
+- `547209` "Voice_AdultMale_PainGrunts_09.wav" by  (CC0) https://freesound.org/people/MrFossy/sounds/547209/
+- `554906` "Male_Breath_Scared_Frozen_Loop_Stereo.wav" by  (CC0) https://freesound.org/people/Nox_Sound/sounds/554906/
+- `554907` "Male_Breath_Fast_Loop_Stereo.wav" by  (CC0) https://freesound.org/people/Nox_Sound/sounds/554907/
+- `556711` "Rustling fabric" by  (CC0) https://freesound.org/people/NachtmahrTV/sounds/556711/
+- `556976` "Male Screams [1]" by  (CC0) https://freesound.org/people/marc3122/sounds/556976/
+- `566400` "Panting Male" by  (CC0) https://freesound.org/people/njjjjjjjjjjjjjjjjjjjjjjjj/sounds/566400/
+- `567251` "Stones Falling" by  (CC0) https://freesound.org/people/iwanPlays/sounds/567251/
+- `567723` "BORIERO_Nolwen_2020_2021_Monster breathing.wav" by  (CC0) https://freesound.org/people/iut_Paris8/sounds/567723/
+- `567998` "monster_sound_medium_pain.wav" by  (CC0) https://freesound.org/people/Leadstarson/sounds/567998/
+- `574044` "Arrow.mp3" by  (CC0) https://freesound.org/people/thecrow_br/sounds/574044/
+- `576108` "S_O_1_Rocks_Falling_05.wav" by  (CC0) https://freesound.org/people/Tim_Verberne/sounds/576108/
+- `578491` "Heavy stone door opens 2" by  (CC0) https://freesound.org/people/PostProdDog/sounds/578491/
+- `595050` "Clean Deep Heartbeat.wav" by  (CC0) https://freesound.org/people/insaind/sounds/595050/
+- `607202` "Defeated_Hellpig.wav" by  (CC0) https://freesound.org/people/TomRonaldmusic/sounds/607202/
+- `610998` "Medium Male Pain Grunts" by  (CC0) https://freesound.org/people/unfa/sounds/610998/
+- `622737` "GiantStompFootsteps.mp3" by  (CC0) https://freesound.org/people/RobHorror240/sounds/622737/
+- `629987` "Knocking on Wood Door (1)" by  (CC0) https://freesound.org/people/Flem0527/sounds/629987/
+- `641040` "GROSS IMPACT" by  (CC0) https://freesound.org/people/magnuswaker/sounds/641040/
+- `647712` "Braam" by  (CC0) https://freesound.org/people/unfa/sounds/647712/
+- `669872` "bah bala oveja/baa bleat sheep.WAV" by  (CC0) https://freesound.org/people/SergioJbs/sounds/669872/
+- `677221` "Ewe baa" by  (CC0) https://freesound.org/people/satoristudios3/sounds/677221/
+- `682884` "Shaky_Breaths.wav" by  (CC0) https://freesound.org/people/drewsimko/sounds/682884/
+- `683101` "quick woosh" by  (CC0) https://freesound.org/people/florianreichelt/sounds/683101/
+- `692900` "Ewe Shetland Sheep Baa" by  (CC0) https://freesound.org/people/satoristudios3/sounds/692900/
+- `708223` "Arrow_Hit_1" by  (CC0) https://freesound.org/people/Mythmazter/sounds/708223/
+- `789389` "Arrow Flyby" by  (CC0) https://freesound.org/people/modusmogulus/sounds/789389/
+- `808213` "jump_grunt_01" by  (CC0) https://freesound.org/people/arther1974/sounds/808213/
+- `808215` "jump_grunt_02" by  (CC0) https://freesound.org/people/arther1974/sounds/808215/
+- `808216` "jump_grunt_03" by  (CC0) https://freesound.org/people/arther1974/sounds/808216/
+- `856173` "Apocalyptic Cinematic Brass Braam Impact" by  (CC0) https://freesound.org/people/brktkrgll/sounds/856173/

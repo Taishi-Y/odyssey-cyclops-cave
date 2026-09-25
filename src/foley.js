@@ -250,6 +250,47 @@ export function installFoley(Audio) {
     return s;
   };
 
+  // ---- winded breathing: one randomly chosen "phrase" per call, so it never ticks like a metronome.
+  // hard = 0..1 (how out of breath). Returns seconds until the next phrase should start.
+  P.pantPhrase = function (pos, hard = 0.5, o = {}) {
+    const J = (v, a = 0.25) => v * R(1 - a, 1 + a); // jitter
+    const base = { pos, minG: o.minG ?? 0.8, wet: o.wet ?? 0.2, lp: o.lp || 0 };
+    const vi = (o.vol ?? 1) * (0.12 + 0.18 * hard), vo = (o.vol ?? 1) * (0.14 + 0.2 * hard);
+    const pat = [
+      ['pair', 5], ['quick', 1.5 + hard * 2.5], ['deep', 1.4], ['groan', 0.5 + hard * 1.2], ['catch', 0.8],
+    ].filter(([n]) => n !== this._lastPant || n === 'pair');
+    let r = Math.random() * pat.reduce((a, [, w]) => a + w, 0), kind = 'pair';
+    for (const [n, w] of pat) { if ((r -= w) < 0) { kind = n; break; } }
+    this._lastPant = kind;
+    const S = (name, x) => this.sfx(name, { ...base, ...x });
+    if (kind === 'quick') {            // "ha-ha-ha": short, higher, clipped
+      const n = Math.random() < 0.5 ? 2 : 3; let t = 0;
+      for (let i = 0; i < n; i++) { S('pantOut', { vol: J(vo * 0.85), rate: R(1.12, 1.35), when: t, dur: R(0.2, 0.3) }); t += R(0.19, 0.29); }
+      return t + R(0.25, 0.5);
+    }
+    if (kind === 'deep') {             // a big gulp of air and a long slow "haaa"
+      S('pantIn', { vol: J(vi * 1.3, 0.15), rate: R(0.82, 0.92) });
+      S('pantOut', { vol: J(vo * 1.2, 0.15), rate: R(0.78, 0.88), when: R(0.42, 0.55) });
+      return R(1.3, 1.8) - hard * 0.3;
+    }
+    if (kind === 'groan') {            // exhale that turns into a low tired groan "haa... nnh"
+      S('pantIn', { vol: J(vi), rate: R(0.9, 1.05) });
+      const w = R(0.3, 0.42);
+      if (Math.random() < 0.6) S('relief', { vol: J(vo * 1.1, 0.2), rate: R(0.85, 1.0), when: w, lp: 3500, dur: R(0.55, 0.85) });
+      else S('hurt', { vol: J(vo * 0.8, 0.2), rate: R(0.8, 0.95), when: w, lp: 2500, dur: 0.35 });
+      return R(1.1, 1.5) - hard * 0.2;
+    }
+    if (kind === 'catch') {            // tries to steady it: one soft breath, then a longer gap
+      S(Math.random() < 0.5 ? 'pantIn' : 'pantOut', { vol: J(vi * 0.7), rate: R(0.92, 1.05) });
+      return R(1.1, 1.6) - hard * 0.3;
+    }
+    // plain "haa-haa" pair, with its own timing, pitch and balance each time
+    const inR = R(0.9, 1.15);
+    S('pantIn', { vol: J(vi), rate: inR });
+    S('pantOut', { vol: J(vo), rate: inR * R(0.9, 1.05), when: R(0.28, 0.42) });
+    return R(0.65, 1.1) - hard * 0.3;
+  };
+
   // ---- continuous beds: wind moan through the entrance, sea + wind outside ----------------
   P.foleyAmbience = function () {
     const ctx = this.ctx;
@@ -363,9 +404,7 @@ export function installFoley(Audio) {
     T.pant -= dt;
     if ((Pl.exhausted || st < 0.4) && !Pl.dead && T.pant < 0) {
       const hard = Pl.exhausted ? 1 : 1 - st / 0.4;
-      T.pant = R(0.8, 1.0) - hard * 0.3;
-      this.sfx('pantIn', { pos: Pl.pos, vol: 0.12 + 0.18 * hard, minG: 0.8, wet: 0.2 });
-      this.sfx('pantOut', { pos: Pl.pos, vol: 0.14 + 0.2 * hard, minG: 0.8, wet: 0.2, when: 0.36 });
+      T.pant = this.pantPhrase(Pl.pos, hard);
     }
     // --- getting hurt
     if (this._hp !== undefined && Pl.hp < this._hp - 0.5) { this.sfx('hit', { vol: 0.9 }); this.sfx('gasp', { vol: 0.35, when: 0.05 }); this.sfx('rustle', { vol: 0.4 }); }

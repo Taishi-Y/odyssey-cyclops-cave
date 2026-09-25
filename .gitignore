@@ -1,3 +1,8 @@
 node_modules/
 dist/
 .DS_Store
+tools/.raw_voice/
+__pycache__/
+public/voice-deep/
+public/voice-test/
+public/voice-preview.html

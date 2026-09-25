@@ -1,92 +1,20 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v3.3.32",
+    "generator": "glTF-Transform v4.5.0",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
-    {
-      "name": "Scene",
-      "nodes": [
-        0
-      ]
-    }
-  ],
-  "nodes": [
-    {
-      "mesh": 0,
-      "name": "wicker_basket_01"
-    }
-  ],
-  "materials": [
-    {
-      "doubleSided": true,
-      "name": "wicker_basket_01",
-      "normalTexture": {
-        "index": 0
-      },
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 1
-        },
-        "metallicRoughnessTexture": {
-          "index": 2
-        }
-      }
-    }
-  ],
-  "meshes": [
-    {
-      "name": "Vert.001",
-      "primitives": [
-        {
-          "attributes": {
-            "POSITION": 0,
-            "NORMAL": 1,
-            "TEXCOORD_0": 2
-          },
-          "indices": 3,
-          "material": 0
-        }
-      ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
-    }
-  ],
-  "images": [
-    {
-      "mimeType": "image/jpeg",
-      "name": "wicker_basket_01_nor_gl",
-      "uri": "textures/wicker_basket_01_nor_gl_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "wicker_basket_01_diff",
-      "uri": "textures/wicker_basket_01_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "wicker_basket_01_rough",
-      "uri": "textures/wicker_basket_01_arm_1k.jpg"
-    }
-  ],
   "accessors": [
     {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 37794,
       "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 15352,
+      "count": 9456,
       "max": [
         0.19134199619293213,
         0.11650627851486206,
@@ -97,63 +25,131 @@
         -0.0009166551753878593,
         -0.14794304966926575
       ],
-      "type": "VEC3"
-    },
-    {
       "bufferView": 1,
-      "componentType": 5126,
-      "count": 15352,
-      "type": "VEC3"
+      "byteOffset": 0
     },
     {
-      "bufferView": 2,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 15352,
-      "type": "VEC2"
+      "count": 9456,
+      "bufferView": 1,
+      "byteOffset": 12
     },
     {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 66828,
-      "type": "SCALAR"
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 9456,
+      "bufferView": 1,
+      "byteOffset": 24
     }
   ],
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 184224,
       "byteOffset": 0,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 184224,
-      "byteOffset": 184224,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 122816,
-      "byteOffset": 368448,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 133656,
-      "byteOffset": 491264,
+      "byteLength": 75588,
       "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 75588,
+      "byteLength": 302592,
+      "byteStride": 32,
+      "target": 34962
     }
   ],
   "samplers": [
     {
       "magFilter": 9729,
-      "minFilter": 9987
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "wicker_basket_01_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wicker_basket_01_nor_gl_1k.jpg"
+    },
+    {
+      "name": "wicker_basket_01_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wicker_basket_01_diff_1k.jpg"
+    },
+    {
+      "name": "wicker_basket_01_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wicker_basket_01_arm_1k.jpg"
     }
   ],
   "buffers": [
     {
-      "byteLength": 624920,
-      "uri": "wicker_basket_01.bin"
+      "uri": "wicker_basket_01.bin",
+      "byteLength": 378180
     }
-  ]
+  ],
+  "materials": [
+    {
+      "name": "wicker_basket_01",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Vert.001",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "wicker_basket_01",
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0
 }

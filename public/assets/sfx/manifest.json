@@ -1,0 +1,437 @@
+{
+"walk": [
+"walk_0.mp3",
+"walk_1.mp3",
+"walk_2.mp3",
+"walk_3.mp3",
+"walk_4.mp3",
+"walk_5.mp3",
+"walk_6.mp3",
+"walk_7.mp3",
+"walk_8.mp3",
+"walk_9.mp3",
+"walk_10.mp3",
+"walk_11.mp3",
+"walk_12.mp3",
+"walk_13.mp3",
+"walk_14.mp3",
+"walk_15.mp3",
+"walk_16.mp3"
+],
+"run": [
+"run_0.mp3",
+"run_1.mp3",
+"run_2.mp3",
+"run_3.mp3",
+"run_4.mp3",
+"run_5.mp3",
+"run_6.mp3",
+"run_7.mp3",
+"run_8.mp3",
+"run_9.mp3",
+"run_10.mp3",
+"run_11.mp3",
+"run_12.mp3",
+"run_13.mp3",
+"run_14.mp3"
+],
+"sneak": [
+"sneak_0.mp3",
+"sneak_1.mp3",
+"sneak_2.mp3",
+"sneak_3.mp3",
+"sneak_4.mp3",
+"sneak_5.mp3",
+"sneak_6.mp3",
+"sneak_7.mp3"
+],
+"land": [
+"land_0.mp3",
+"land_1.mp3",
+"land_2.mp3"
+],
+"bleat": [
+"bleat_0.mp3",
+"bleat_1.mp3",
+"bleat_2.mp3",
+"bleat_3.mp3",
+"bleat_4.mp3",
+"bleat_5.mp3",
+"bleat_6.mp3",
+"bleat_7.mp3",
+"bleat_8.mp3",
+"bleat_9.mp3",
+"bleat_10.mp3",
+"bleat_11.mp3",
+"bleat_12.mp3"
+],
+"creak": [
+"creak_0.mp3"
+],
+"string": [
+"string_0.mp3",
+"string_1.mp3"
+],
+"arrowFly": [
+"arrowFly_0.mp3",
+"arrowFly_1.mp3",
+"arrowFly_2.mp3",
+"arrowFly_3.mp3"
+],
+"arrowRock": [
+"arrowRock_0.mp3",
+"arrowRock_1.mp3",
+"arrowRock_2.mp3"
+],
+"flesh": [
+"flesh_0.mp3",
+"flesh_1.mp3",
+"flesh_2.mp3",
+"flesh_3.mp3",
+"flesh_4.mp3",
+"flesh_5.mp3"
+],
+"spearRock": [
+"spearRock_0.mp3",
+"spearRock_1.mp3",
+"spearRock_2.mp3"
+],
+"stone": [
+"stone_0.mp3",
+"stone_1.mp3",
+"stone_2.mp3",
+"stone_3.mp3",
+"stone_4.mp3",
+"stone_5.mp3",
+"stone_6.mp3"
+],
+"pebbles": [
+"pebbles_0.mp3",
+"pebbles_1.mp3",
+"pebbles_2.mp3",
+"pebbles_3.mp3",
+"pebbles_4.mp3",
+"pebbles_5.mp3"
+],
+"rockfall": [
+"rockfall_0.mp3",
+"rockfall_1.mp3",
+"rockfall_2.mp3",
+"rockfall_3.mp3"
+],
+"drip": [
+"drip_0.mp3",
+"drip_1.mp3",
+"drip_2.mp3",
+"drip_3.mp3",
+"drip_4.mp3",
+"drip_5.mp3",
+"drip_6.mp3"
+],
+"giantStep": [
+"giantStep_0.mp3",
+"giantStep_1.mp3",
+"giantStep_2.mp3",
+"giantStep_3.mp3",
+"giantStep_4.mp3",
+"giantStep_5.mp3",
+"giantStep_6.mp3",
+"giantStep_7.mp3",
+"giantStep_8.mp3"
+],
+"roar": [
+"roar_0.mp3",
+"roar_1.mp3",
+"roar_2.mp3",
+"roar_3.mp3",
+"roar_4.mp3"
+],
+"painRoar": [
+"painRoar_0.mp3",
+"painRoar_1.mp3",
+"painRoar_2.mp3"
+],
+"scream": [
+"scream_0.mp3",
+"scream_1.mp3",
+"scream_2.mp3",
+"scream_3.mp3",
+"scream_4.mp3",
+"scream_5.mp3"
+],
+"snore": [
+"snore_0.mp3",
+"snore_1.mp3",
+"snore_2.mp3",
+"snore_3.mp3",
+"snore_4.mp3",
+"snore_5.mp3",
+"snore_6.mp3",
+"snore_7.mp3",
+"snore_8.mp3",
+"snore_9.mp3"
+],
+"giantBreath": [
+"giantBreath_0.mp3",
+"giantBreath_1.mp3",
+"giantBreath_2.mp3",
+"giantBreath_3.mp3",
+"giantBreath_4.mp3",
+"giantBreath_5.mp3"
+],
+"pant": [
+"pant_0.mp3",
+"pant_1.mp3",
+"pant_2.mp3",
+"pant_3.mp3",
+"pant_4.mp3",
+"pant_5.mp3",
+"pant_6.mp3",
+"pant_7.mp3",
+"pant_8.mp3",
+"pant_9.mp3",
+"pant_10.mp3",
+"pant_11.mp3"
+],
+"bone": [
+"bone_0.mp3",
+"bone_1.mp3",
+"bone_2.mp3",
+"bone_3.mp3",
+"bone_4.mp3",
+"bone_5.mp3"
+],
+"squelch": [
+"squelch_0.mp3",
+"squelch_1.mp3",
+"squelch_2.mp3",
+"squelch_3.mp3",
+"squelch_4.mp3",
+"squelch_5.mp3"
+],
+"chew": [
+"chew_0.mp3",
+"chew_1.mp3"
+],
+"heart": [
+"heart_0.mp3",
+"heart_1.mp3",
+"heart_2.mp3",
+"heart_3.mp3",
+"heart_4.mp3",
+"heart_5.mp3",
+"heart_6.mp3",
+"heart_7.mp3",
+"heart_8.mp3",
+"heart_9.mp3",
+"heart_10.mp3",
+"heart_11.mp3"
+],
+"scaredBreath": [
+"scaredBreath_0.mp3",
+"scaredBreath_1.mp3",
+"scaredBreath_2.mp3",
+"scaredBreath_3.mp3",
+"scaredBreath_4.mp3",
+"scaredBreath_5.mp3",
+"scaredBreath_6.mp3",
+"scaredBreath_7.mp3",
+"scaredBreath_8.mp3",
+"scaredBreath_9.mp3",
+"scaredBreath_10.mp3",
+"scaredBreath_11.mp3",
+"scaredBreath_12.mp3",
+"scaredBreath_13.mp3",
+"scaredBreath_14.mp3",
+"scaredBreath_15.mp3",
+"scaredBreath_16.mp3",
+"scaredBreath_17.mp3",
+"scaredBreath_18.mp3",
+"scaredBreath_19.mp3",
+"scaredBreath_20.mp3"
+],
+"fastBreath": [
+"fastBreath_0.mp3",
+"fastBreath_1.mp3",
+"fastBreath_2.mp3",
+"fastBreath_3.mp3",
+"fastBreath_4.mp3",
+"fastBreath_5.mp3",
+"fastBreath_6.mp3",
+"fastBreath_7.mp3",
+"fastBreath_8.mp3",
+"fastBreath_9.mp3",
+"fastBreath_10.mp3",
+"fastBreath_11.mp3",
+"fastBreath_12.mp3",
+"fastBreath_13.mp3",
+"fastBreath_14.mp3",
+"fastBreath_15.mp3",
+"fastBreath_16.mp3",
+"fastBreath_17.mp3",
+"fastBreath_18.mp3"
+],
+"gasp": [
+"gasp_0.mp3",
+"gasp_1.mp3",
+"gasp_2.mp3",
+"gasp_3.mp3"
+],
+"relief": [
+"relief_0.mp3",
+"relief_1.mp3",
+"relief_2.mp3",
+"relief_3.mp3"
+],
+"grind": [
+"grind_0.mp3",
+"grind_1.mp3",
+"grind_2.mp3"
+],
+"rustle": [
+"rustle_0.mp3",
+"rustle_1.mp3",
+"rustle_2.mp3",
+"rustle_3.mp3",
+"rustle_4.mp3",
+"rustle_5.mp3",
+"rustle_6.mp3",
+"rustle_7.mp3",
+"rustle_8.mp3"
+],
+"effort": [
+"effort_0.mp3",
+"effort_1.mp3",
+"effort_2.mp3"
+],
+"hurt": [
+"hurt_0.mp3",
+"hurt_1.mp3",
+"hurt_2.mp3",
+"hurt_3.mp3",
+"hurt_4.mp3",
+"hurt_5.mp3"
+],
+"knock": [
+"knock_0.mp3",
+"knock_1.mp3",
+"knock_2.mp3"
+],
+"sizzle": [
+"sizzle_0.mp3",
+"sizzle_1.mp3"
+],
+"scrape": [
+"scrape_0.mp3",
+"scrape_1.mp3",
+"scrape_2.mp3",
+"scrape_3.mp3",
+"scrape_4.mp3",
+"scrape_5.mp3"
+],
+"drag": [
+"drag_0.mp3",
+"drag_1.mp3",
+"drag_2.mp3",
+"drag_3.mp3",
+"drag_4.mp3",
+"drag_5.mp3",
+"drag_6.mp3",
+"drag_7.mp3"
+],
+"whoosh": [
+"whoosh_0.mp3",
+"whoosh_1.mp3",
+"whoosh_2.mp3"
+],
+"gull": [
+"gull_0.mp3",
+"gull_1.mp3",
+"gull_2.mp3",
+"gull_3.mp3",
+"gull_4.mp3",
+"gull_5.mp3",
+"gull_6.mp3"
+],
+"bowDrawHeavy": [
+"bowDrawHeavy_0.mp3",
+"bowDrawHeavy_1.mp3",
+"bowDrawHeavy_2.mp3",
+"bowDrawHeavy_3.mp3"
+],
+"bowRelease": [
+"bowRelease_0.mp3",
+"bowRelease_1.mp3",
+"bowRelease_2.mp3",
+"bowRelease_3.mp3",
+"bowRelease_4.mp3"
+],
+"arrowFlesh": [
+"arrowFlesh_0.mp3",
+"arrowFlesh_1.mp3",
+"arrowFlesh_2.mp3",
+"arrowFlesh_3.mp3",
+"arrowFlesh_4.mp3",
+"arrowFlesh_5.mp3",
+"arrowFlesh_6.mp3"
+],
+"hitPunch": [
+"hitPunch_0.mp3",
+"hitPunch_1.mp3",
+"hitPunch_2.mp3"
+],
+"cyGroan": [
+"cyGroan_0.mp3",
+"cyGroan_1.mp3",
+"cyGroan_2.mp3",
+"cyGroan_3.mp3",
+"cyGroan_4.mp3",
+"cyGroan_5.mp3",
+"cyGroan_6.mp3",
+"cyGroan_7.mp3",
+"cyGroan_8.mp3",
+"cyGroan_9.mp3",
+"cyGroan_10.mp3"
+],
+"boom": [
+"boom_0.mp3",
+"boom_1.mp3",
+"boom_2.mp3",
+"boom_3.mp3",
+"boom_4.mp3",
+"boom_5.mp3",
+"boom_6.mp3"
+],
+"braam": [
+"braam_0.mp3",
+"braam_1.mp3",
+"braam_2.mp3"
+],
+"subdrop": [
+"subdrop_0.mp3",
+"subdrop_1.mp3"
+],
+"quake": [
+"quake_0.mp3",
+"quake_1.mp3",
+"quake_2.mp3",
+"quake_3.mp3"
+],
+"tremorLoop": [
+"tremorLoop_0.mp3"
+],
+"fireLoop": [
+"fireLoop_0.mp3",
+"fireLoop_1.mp3"
+],
+"caveLoop": [
+"caveLoop_0.mp3",
+"caveLoop_1.mp3"
+],
+"seaLoop": [
+"seaLoop_0.mp3"
+],
+"windLoop": [
+"windLoop_0.mp3"
+]
+}

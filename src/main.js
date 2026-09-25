@@ -13,12 +13,16 @@ const post = createComposer(renderer, scene, camera);
 const params0 = new URLSearchParams(location.search);
 import { isTouchDevice } from './input.js';
 const mobile = isTouchDevice();
-if (params0.get('q') === 'low' || (mobile && params0.get('q') !== 'high')) { renderer.setPixelRatio(1); post.ao.enabled = false; post.composer.setSize(innerWidth, innerHeight); }
-if (params0.get('q') === 'high') { renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); post.composer.setSize(innerWidth, innerHeight); }
+import { createLightPool, createResolutionScaler } from './perf.js';
+// quality: ?q=low fixed 1x without AO, ?q=high fixed full resolution, otherwise resolution adapts to the frame rate
+const q = params0.get('q');
+if (q === 'low' || (mobile && q !== 'high')) post.aoAllowed = false;
+const res = createResolutionScaler(renderer, post, q === 'high' ? { forced: Math.min(devicePixelRatio, 2) } : q === 'low' ? { forced: 1 } : mobile ? { max: 1, min: 0.5 } : {});
+window.__res = res;
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight); post.composer.setSize(innerWidth, innerHeight);
+  res.apply();
 });
 
 const bar = document.querySelector('#loadbar div');
@@ -26,6 +30,7 @@ const txt = document.getElementById('loadtxt');
 const params = new URLSearchParams(location.search);
 
 const world = await buildWorld(scene, renderer, (p) => { bar.style.width = `${Math.round(p * 70)}%`; });
+post.haze.target = world.firePos;
 txt.textContent = 'Preparing the characters...';
 const game = new Game({ scene, camera, renderer, world, post, params, onProgress: (p) => { bar.style.width = `${70 + Math.round(p * 30)}%`; } });
 await game.init();
@@ -34,9 +39,14 @@ txt.textContent = 'Ready';
 const startBtn = document.getElementById('start');
 startBtn.disabled = false;
 startBtn.onclick = () => { document.getElementById('menu').style.display = 'none'; game.start(); };
+document.getElementById('howto').onclick = () => game.help.toggle(true);
 if (params.has('auto')) startBtn.onclick();
 window.__game = game;
 
+// small point lights (torches, side fires, stake glow) share a fixed pool of real lights
+const lightPool = createLightPool(scene, camera);
+lightPool.update(1);
+world.updaters.push((dt) => lightPool.update(dt));
 // precompile shaders to avoid hitches
 renderer.compile(scene, camera);
 
@@ -53,7 +63,9 @@ function tick(dtReal, render = true) {
 }
 const manual = params.has('manual');
 function frame() {
-  const d = Math.min(clock.getDelta(), 1 / 20);
+  const raw = clock.getDelta();
+  const d = Math.min(raw, 1 / 20);
+  if (!manual) res.update(raw);
   if (!manual) tick(d); else post.composer.render(0);
   requestAnimationFrame(frame);
 }

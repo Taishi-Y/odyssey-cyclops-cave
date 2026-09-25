@@ -1,9 +1,12 @@
+// arrow keys work as WASD
+const ALIAS = { KeyW: 'ArrowUp', KeyS: 'ArrowDown', KeyA: 'ArrowLeft', KeyD: 'ArrowRight' };
+
 export class Input {
   constructor(canvas) {
     this.keys = new Set(); this.just = new Set();
     this.mouse = { dx: 0, dy: 0 }; this.mouseDown = [false, false, false];
     this.locked = false;
-    addEventListener('keydown', (e) => { if (!this.keys.has(e.code)) this.just.add(e.code); this.keys.add(e.code); if (['Space', 'Tab'].includes(e.code)) e.preventDefault(); });
+    addEventListener('keydown', (e) => { if (!this.keys.has(e.code)) this.just.add(e.code); this.keys.add(e.code); if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault(); });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('mousemove', (e) => { if (this.locked) { this.mouse.dx += e.movementX; this.mouse.dy += e.movementY; } });
     addEventListener('mousedown', (e) => { if (this.touch) return; this.mouseDown[e.button] = true; if (!this.locked && this.wantLock) canvas.requestPointerLock?.()?.catch?.(() => {}); });
@@ -12,8 +15,8 @@ export class Input {
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === canvas; });
     addEventListener('blur', () => { if (this.touch) return; this.keys.clear(); this.mouseDown = [false, false, false]; });
   }
-  down(c) { return this.keys.has(c); }
-  pressed(c) { return this.just.has(c); }
+  down(c) { return this.keys.has(c) || (ALIAS[c] !== undefined && this.keys.has(ALIAS[c])); }
+  pressed(c) { return this.just.has(c) || (ALIAS[c] !== undefined && this.just.has(ALIAS[c])); }
   endFrame() { this.just.clear(); }
 }
 
@@ -36,6 +39,7 @@ export function attachTouchControls(input) {
     <div class="tbtn small" id="t-cam">CAM</div>
     <div class="tbtn small" id="t-switch">SWITCH</div>
     <div class="tbtn small" id="t-photo">PHOTO</div>
+    <div class="tbtn small" id="t-help">?</div>
     <div class="tbtn" id="t-wheel">WHEEL</div>
     <div class="tbtn" id="t-knock">KNOCK</div>
     <div class="tbtn" id="t-prone">PRONE</div>`;
@@ -85,6 +89,7 @@ export function attachTouchControls(input) {
   const fireEnd = (e) => { for (const t of e.changedTouches) if (t.identifier === input._fireLookId) { input._fireLookId = null; input.mouseDown[0] = false; setTimeout(() => (input.mouseDown[2] = false), 120); fire.classList.remove('on'); } };
   fire.addEventListener('touchend', fireEnd); fire.addEventListener('touchcancel', fireEnd);
   const tap = (id, code) => root.querySelector(id).addEventListener('touchstart', (e) => { if (code === 'Space') input.touchE = true; input.just.add(code); K.add(code); setTimeout(() => K.delete(code), 60); e.preventDefault(); }, { passive: false });
+  root.querySelector('#t-help').addEventListener('touchstart', (e) => { input.onHelp?.(); e.preventDefault(); }, { passive: false });
   tap('#t-jump', 'Space'); tap('#t-cam', 'KeyV'); tap('#t-knock', 'KeyF'); tap('#t-switch', 'KeyX'); tap('#t-photo', 'KeyP');
   const prone = root.querySelector('#t-prone');
   prone.addEventListener('touchstart', (e) => { input.just.add('KeyZ'); prone.classList.toggle('on'); e.preventDefault(); }, { passive: false });

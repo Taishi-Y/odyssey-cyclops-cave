@@ -1,0 +1,301 @@
+{
+ "orders": {
+  "attack": [
+   {
+    "f": "order_attack_0_crewC.mp3",
+    "v": "crewC",
+    "t": "All together!! <breath> ATTACK!! Go for his LEGS!!"
+   },
+   {
+    "f": "order_attack_1_crewC.mp3",
+    "v": "crewC",
+    "t": "NOW!! <breath> Everyone, CHARGE!!"
+   },
+   {
+    "f": "order_attack_2_crewC.mp3",
+    "v": "crewC",
+    "t": "At him, all of you!! NOW!!"
+   },
+   {
+    "f": "order_attack_0_crewD.mp3",
+    "v": "crewD",
+    "t": "All together!! <breath> ATTACK!! Go for his LEGS!!"
+   },
+   {
+    "f": "order_attack_1_crewD.mp3",
+    "v": "crewD",
+    "t": "NOW!! <breath> Everyone, CHARGE!!"
+   },
+   {
+    "f": "order_attack_2_crewD.mp3",
+    "v": "crewD",
+    "t": "At him, all of you!! NOW!!"
+   },
+   {
+    "f": "order_attack_0_odysseus.mp3",
+    "v": "odysseus",
+    "t": "All together!! <breath> ATTACK!! Go for his LEGS!!"
+   },
+   {
+    "f": "order_attack_1_odysseus.mp3",
+    "v": "odysseus",
+    "t": "NOW!! <breath> Everyone, CHARGE!!"
+   },
+   {
+    "f": "order_attack_2_odysseus.mp3",
+    "v": "odysseus",
+    "t": "At him, all of you!! NOW!!"
+   }
+  ],
+  "flank": [
+   {
+    "f": "order_flank_0_crewC.mp3",
+    "v": "crewC",
+    "t": "Split up!! Half of you draw his eye, <breath> the rest hit him from BEHIND!!"
+   },
+   {
+    "f": "order_flank_1_crewC.mp3",
+    "v": "crewC",
+    "t": "Surround him!! <breath> Left side with me, right side GO!!"
+   },
+   {
+    "f": "order_flank_2_crewC.mp3",
+    "v": "crewC",
+    "t": "Get behind him!! <breath> Take his legs from BEHIND!!"
+   },
+   {
+    "f": "order_flank_0_crewD.mp3",
+    "v": "crewD",
+    "t": "Split up!! Half of you draw his eye, <breath> the rest hit him from BEHIND!!"
+   },
+   {
+    "f": "order_flank_1_crewD.mp3",
+    "v": "crewD",
+    "t": "Surround him!! <breath> Left side with me, right side GO!!"
+   },
+   {
+    "f": "order_flank_2_crewD.mp3",
+    "v": "crewD",
+    "t": "Get behind him!! <breath> Take his legs from BEHIND!!"
+   },
+   {
+    "f": "order_flank_0_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Split up!! Half of you draw his eye, <breath> the rest hit him from BEHIND!!"
+   },
+   {
+    "f": "order_flank_1_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Surround him!! <breath> Left side with me, right side GO!!"
+   },
+   {
+    "f": "order_flank_2_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Get behind him!! <breath> Take his legs from BEHIND!!"
+   }
+  ],
+  "scatter": [
+   {
+    "f": "order_scatter_0_crewC.mp3",
+    "v": "crewC",
+    "t": "SCATTER!! <breath> Don't bunch up!! SCATTER!!"
+   },
+   {
+    "f": "order_scatter_1_crewC.mp3",
+    "v": "crewC",
+    "t": "Split up!! <breath> Run different ways!!"
+   },
+   {
+    "f": "order_scatter_2_crewC.mp3",
+    "v": "crewC",
+    "t": "Break apart!! <breath> He can't catch us ALL!!"
+   },
+   {
+    "f": "order_scatter_0_crewD.mp3",
+    "v": "crewD",
+    "t": "SCATTER!! <breath> Don't bunch up!! SCATTER!!"
+   },
+   {
+    "f": "order_scatter_1_crewD.mp3",
+    "v": "crewD",
+    "t": "Split up!! <breath> Run different ways!!"
+   },
+   {
+    "f": "order_scatter_2_crewD.mp3",
+    "v": "crewD",
+    "t": "Break apart!! <breath> He can't catch us ALL!!"
+   },
+   {
+    "f": "order_scatter_0_odysseus.mp3",
+    "v": "odysseus",
+    "t": "SCATTER!! <breath> Don't bunch up!! SCATTER!!"
+   },
+   {
+    "f": "order_scatter_1_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Split up!! <breath> Run different ways!!"
+   },
+   {
+    "f": "order_scatter_2_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Break apart!! <breath> He can't catch us ALL!!"
+   }
+  ],
+  "fallback": [
+   {
+    "f": "order_fallback_0_crewC.mp3",
+    "v": "crewC",
+    "t": "Fall back!! <breath> FALL BACK!!"
+   },
+   {
+    "f": "order_fallback_1_crewC.mp3",
+    "v": "crewC",
+    "t": "Back off!! <breath> Get out of his REACH!!"
+   },
+   {
+    "f": "order_fallback_2_crewC.mp3",
+    "v": "crewC",
+    "t": "Pull back to the wall!! NOW!!"
+   },
+   {
+    "f": "order_fallback_0_crewD.mp3",
+    "v": "crewD",
+    "t": "Fall back!! <breath> FALL BACK!!"
+   },
+   {
+    "f": "order_fallback_1_crewD.mp3",
+    "v": "crewD",
+    "t": "Back off!! <breath> Get out of his REACH!!"
+   },
+   {
+    "f": "order_fallback_2_crewD.mp3",
+    "v": "crewD",
+    "t": "Pull back to the wall!! NOW!!"
+   },
+   {
+    "f": "order_fallback_0_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Fall back!! <breath> FALL BACK!!"
+   },
+   {
+    "f": "order_fallback_1_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Back off!! <breath> Get out of his REACH!!"
+   },
+   {
+    "f": "order_fallback_2_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Pull back to the wall!! NOW!!"
+   }
+  ],
+  "regroup": [
+   {
+    "f": "order_regroup_0_crewC.mp3",
+    "v": "crewC",
+    "t": "On me!! <breath> Form up!! ON ME!!"
+   },
+   {
+    "f": "order_regroup_1_crewC.mp3",
+    "v": "crewC",
+    "t": "Regroup!! <breath> Stay TOGETHER!!"
+   },
+   {
+    "f": "order_regroup_2_crewC.mp3",
+    "v": "crewC",
+    "t": "To me!! <breath> Close ranks!!"
+   },
+   {
+    "f": "order_regroup_0_crewD.mp3",
+    "v": "crewD",
+    "t": "On me!! <breath> Form up!! ON ME!!"
+   },
+   {
+    "f": "order_regroup_1_crewD.mp3",
+    "v": "crewD",
+    "t": "Regroup!! <breath> Stay TOGETHER!!"
+   },
+   {
+    "f": "order_regroup_2_crewD.mp3",
+    "v": "crewD",
+    "t": "To me!! <breath> Close ranks!!"
+   },
+   {
+    "f": "order_regroup_0_odysseus.mp3",
+    "v": "odysseus",
+    "t": "On me!! <breath> Form up!! ON ME!!"
+   },
+   {
+    "f": "order_regroup_1_odysseus.mp3",
+    "v": "odysseus",
+    "t": "Regroup!! <breath> Stay TOGETHER!!"
+   },
+   {
+    "f": "order_regroup_2_odysseus.mp3",
+    "v": "odysseus",
+    "t": "To me!! <breath> Close ranks!!"
+   }
+  ]
+ },
+ "ack": [
+  {
+   "f": "ack_00_deep2.mp3",
+   "v": 0,
+   "t": "YES!!"
+  },
+  {
+   "f": "ack_01_deep3.mp3",
+   "v": 1,
+   "t": "Go, go, GO!!"
+  },
+  {
+   "f": "ack_02_crewC.mp3",
+   "v": 2,
+   "t": "With you!!"
+  },
+  {
+   "f": "ack_03_crewD.mp3",
+   "v": 3,
+   "t": "TOGETHER!!"
+  },
+  {
+   "f": "ack_04_crewE.mp3",
+   "v": 4,
+   "t": "For ITHACA!!"
+  },
+  {
+   "f": "ack_05_crewF.mp3",
+   "v": 5,
+   "t": "Hyaaah!!"
+  },
+  {
+   "f": "ack_06_tenor.mp3",
+   "v": 6,
+   "t": "YES!!"
+  },
+  {
+   "f": "ack_07_mid.mp3",
+   "v": 7,
+   "t": "Go, go, GO!!"
+  },
+  {
+   "f": "ack_08_wiry.mp3",
+   "v": 8,
+   "t": "With you!!"
+  },
+  {
+   "f": "ack_09_deep2.mp3",
+   "v": 0,
+   "t": "TOGETHER!!"
+  },
+  {
+   "f": "ack_10_deep3.mp3",
+   "v": 1,
+   "t": "For ITHACA!!"
+  },
+  {
+   "f": "ack_11_crewC.mp3",
+   "v": 2,
+   "t": "Hyaaah!!"
+  }
+ ]
+}

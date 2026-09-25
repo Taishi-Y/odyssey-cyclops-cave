@@ -4,7 +4,7 @@ import { fbm3, noise3 } from './noise.js';
 
 // Layout (meters). Floor at y=0, entrance tunnel toward +z, ceiling crack above.
 export const LAYOUT = {
-  chamber: { c: new THREE.Vector3(0, 10, -2), r: new THREE.Vector3(21, 16, 15) },
+  chamber: { c: new THREE.Vector3(0, 10, -2), r: new THREE.Vector3(25, 17, 18) },
   alcove: { c: new THREE.Vector3(-13, 5, -13), r: 8.5 },    // cyclops sleeps here
   pen: { c: new THREE.Vector3(14, 4, -9), r: 7.5 },          // sheep pen
   tunnelZ0: 8, tunnelZ1: 60, tunnelHalfW: 5.2, tunnelH: 13.5,
@@ -64,10 +64,10 @@ export function rockField(x, y, z) {
 }
 
 export function buildCave(onProgress) {
-  const RES = 150;
-  const half = new THREE.Vector3(30, 17, 30);
-  const center = new THREE.Vector3(0, 14, 4);
-  const mc = new MarchingCubes(RES, new THREE.MeshBasicMaterial(), false, false, 900000);
+  const RES = 170;
+  const half = new THREE.Vector3(34, 17, 31);
+  const center = new THREE.Vector3(0, 14, 3);
+  const mc = new MarchingCubes(RES, new THREE.MeshBasicMaterial(), false, false, 1300000);
   mc.isolation = 0;
   const f = mc.field;
   for (let k = 0; k < RES; k++) {

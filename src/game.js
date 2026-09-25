@@ -1,17 +1,29 @@
+import { crewBark } from './voices.js';
+import { equipSwords, updateCrewFight } from './crewfight.js';
+import { updateSquad, squadStep, poseLeader } from './squad.js';
 import * as THREE from 'three';
-import { loadCharacterAssets, Cyclops, Soldier } from './characters.js';
+import { loadCharacterAssets, Cyclops, Soldier, CREW_MODELS } from './characters.js';
 import { Flock } from './sheep.js';
 import { floorHeightAt, LAYOUT, airDist, rockField } from './cave.js';
 import { Physics } from './physics.js';
-import { loadNav, navSeek } from './nav.js';
+import { loadNav, navSeek, tunnelCenterX } from './nav.js';
+import { updateCower } from './cower.js';
 import { Player } from './player.js';
 import { Input, isTouchDevice, attachTouchControls } from './input.js';
+import { HelpScreen } from './help.js';
 import { Audio } from './audio.js';
 import { Particles, Decals } from './fx.js';
+import { ArrowFX } from './arrowfx.js';
 import { Radar, AlertSystem, WeaponWheel, CharacterSwitch } from './tactical.js';
 import { StealthMeter, QTE, PhotoMode, Pickups } from './modern.js';
 
 const $ = (id) => document.getElementById(id);
+// giant's grab / eat actions run this much slower than the original timing (heavier, more deliberate)
+const CY_SLOW = 1.7;
+// how far his fingers curl round a man he holds (radians per joint); a full fist would pass through the body
+const GRIP = 0.8;
+// seconds the cinematic shot of him eating a man lasts before the camera hands control back
+const EAT_CAM_HOLD = 1.4;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const flat = (v) => V(v.x, 0, v.z);
 
@@ -50,21 +62,42 @@ export class Game {
     }));
     // while the door-stone is shut nobody walks into it
     this.nav.man.extraBlock = (x, z) => this.doorShut && z > this.world.doorClosed.z - 5.2;
-    this.particles = new Particles(scene);
+    // heavy blood drops leave small splats where they hit the floor (a few per frame at most)
+    this._splatFrame = -1; this._splats = 0;
+    this.particles = new Particles(scene, 4000, {
+      ground: floorHeightAt,
+      onLand: (x, y, z, size) => {
+        if (this._splatFrame !== this.frameNo) { this._splatFrame = this.frameNo; this._splats = 0; }
+        if (this._splats++ < 4) this.decals.add(V(x, y - 0.02, z), 0.12 + size * 2.5 + Math.random() * 0.15);
+      },
+    });
     this.decals = new Decals(scene);
     this.player = new Player({ camera: this.camera, scene, physics: this.physics, audio: this.audio, input: this.input });
     this.player.pos.set(3, floorHeightAt(3, 12), 12);
     this.player.yaw = 0.15;
     this.player.onProjectileTest = (a, b, p) => this.projectileHit(a, b, p);
     // Odysseus himself, seen over the shoulder
-    this.odysseus = new Soldier(scene, { seed: 42 });
+    this.odysseus = new Soldier(scene, { seed: 42, hero: true, helmet: true });
     this.player.setAvatar(this.odysseus);
-    this.player.onImpact = (pt) => { this.particles.dust(pt, 4, 0.3); this.particles.sparks(pt, 5); this.makeNoise(pt, 0.35); };
-    this.player.onFire = () => this.makeNoise(this.player.pos, 0.35);
+    this.arrowFx = new ArrowFX(scene, this.camera, this.player, this.physics);
+    this.arrowFx.zoneTest = (a, b) => this.zoneAlong(a, b);
+    this.arrowFx.eyeTarget = () => (this.cy.root.visible && !this.cy.blind ? this.cy.eyeWorld() : null);
+    this.arrowFx.onTargetChange = (zone) => { if (zone === 'eye') { this.haptic(20); this.audio.uiTick?.(); } };
+    this.player.onImpact = (pt, n, p) => {
+      const big = p && p.kind !== 'stone';
+      this.particles.dust(pt, big ? 10 : 4, big ? 0.6 : 0.3); this.particles.sparks(pt, big ? 18 : 5);
+      this.arrowFx.impact(pt, n, p);
+      this.makeNoise(pt, 0.35);
+    };
+    this.player.onFire = () => {
+      this.makeNoise(this.player.pos, 0.35);
+      const c = this.hud.cross; c.classList.remove('release'); void c.offsetWidth; c.classList.add('release');
+    };
     this.onProgress?.(0.5);
 
     // Polyphemus
     this.cy = new Cyclops(scene, 13);
+    this.cy.squatRate = 1.2; // bends the knees slowly when reaching down
     this.cy.root.position.set(0, 0, 60);
     this.cy.root.visible = false;
     this.cyState = { mode: 'away', target: null, alert: 0, stun: 0, anger: 0, step: 0, grabbing: null, heading: Math.PI, hp: 100 };
@@ -74,7 +107,9 @@ export class Game {
     this.soldiers = [];
     const spots = [[5, 3], [7, 1], [9, 4], [11, 2], [13, 5], [12, 0], [8, 7], [4, 6], [15, 3], [10, 9], [6, 9], [14, 8]];
     spots.forEach(([x, z], i) => {
-      const s = new Soldier(scene, { torch: i % 4 === 0, seed: i + 1 });
+      const nm = ['Eurylochus', 'Polites', 'Perimedes', 'Elpenor', 'Antiphus', 'Cleitus', 'Lycus', 'Dorion', 'Megon', 'Theon', 'Nicon', 'Aristo'][i].toLowerCase();
+      const model = CREW_MODELS.includes(nm) ? nm : CREW_MODELS[i % CREW_MODELS.length];
+      const s = new Soldier(scene, { torch: i % 4 === 0, seed: i + 1, model, helmet: i % 2 === 0 }); // about half keep their helmets on
       s.home = V(x, floorHeightAt(x, z), z);
       s.root.position.copy(s.home);
       s.root.rotation.y = Math.random() * 6.28;
@@ -83,12 +118,15 @@ export class Game {
         const l = new THREE.PointLight(0xff8a3a, 20, 12, 1.8); s.torchTip.add(l); s.torchLight = l;
         const fl = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 2.2, 0.5) })); s.torchTip.add(fl);
       }
+      s.cower = [5, 7, 10].includes(i); // Cleitus, Dorion, Nicon freeze in terror against the wall
+      s.voice = [2, 6, 3, 7, 8, 0, 5, 4, 1, 7, 6, 8][i]; // crew voice A-I (Eurylochus C, Polites tenor, Perimedes D)
       this.soldiers.push(s);
     });
+    equipSwords(this);
     this.onProgress?.(0.85);
 
-    // the flock (the film used 40 sheep)
-    this.flock = new Flock(scene, 40, V(12, 0, -7), 5.5);
+    // the flock (the film used 40 sheep; 10 keeps the cave readable and the frame light)
+    this.flock = new Flock(scene, 10, V(12, 0, -7), 3.5);
     this.flock.onBleat = (p) => this.audio.bleat(p);
 
     // heated stake glow
@@ -98,6 +136,7 @@ export class Game {
 
     // Metal Gear / GTA systems
     this.VIEW_DOT = 0.2; this.VIEW_RANGE = 34;
+    this.CY_WALK_PACE = 0.6; // giant's walking speed (and walk-cycle rate) multiplier
     this.noiseRings = [];
     this.isAir = (x, z) => walkable(x, z, 0.3);
     this.radar = new Radar(this);
@@ -108,6 +147,8 @@ export class Game {
     this.meter = new StealthMeter(this);
     this.qte = new QTE(this);
     this.photo = new PhotoMode(this);
+    this.help = new HelpScreen(this);
+    this.input.onHelp = () => this.help.toggle();
     this.pickups = new Pickups(this);
     this.realTasks = [];
     this.player.hp = 100;
@@ -137,6 +178,8 @@ export class Game {
     s.innerHTML = who ? `<span style="color:#c9a26a;font-style:normal;font-size:16px;letter-spacing:.15em">${who}</span><br>${text}` : text;
     s.style.opacity = 1;
     clearTimeout(this._subT); this._subT = setTimeout(() => (s.style.opacity = 0), sec * 1000);
+    const sp = who && this.soldiers?.find((m) => m.name === who && m.alive);
+    this.audio.sayVoice?.(text, sp ? sp.root.position.clone().setY(sp.root.position.y + 1.6) : null);
   }
   objective(key) {
     const [title, text] = PHASE_TEXT[key];
@@ -189,12 +232,15 @@ export class Game {
     await Promise.race([this.wait(30), this.until(() => this.player.pos.z < 4 || this.player.pos.z > 14)]);
     // the giant returns
     this.audio.stomp(V(0, 0, 45), 1.2); this.player.shake = 0.6;
+    this.audio.boom?.('quake', 1);
     this.say('…The ground is shaking', 3, 'Perimedes');
+    crewBark(this, 'arrive', { n: 3, delay: 1.6 });
     await this.wait(1.4);
     this.audio.stomp(V(0, 0, 42), 1.4); this.player.shake = 0.8;
     await this.wait(1.4);
     this.cy.root.visible = true;
-    this.placeCy(V(1.6, 0, 21)); this.cyState.heading = Math.PI;
+    this.audio.boom?.('arrival', 1.2);
+    this.placeCy(V(tunnelCenterX(17.8), 0, 17.8)); this.cy.crouch = 1; this.cy.squat = 1.6; this.cyState.heading = this.cy.root.rotation.y = Math.PI;
     this.cyState.mode = 'script';
     this.soldiers.forEach((s) => { s.state = 'hide'; });
     this.setTension(0.6);
@@ -209,6 +255,7 @@ export class Game {
     await this.closeBoulder();
     this.setPhase('trapped');
     this.say('The entrance… he\'s sealed it with a rock', 4, 'Eurylochus');
+    crewBark(this, 'sealed', { n: 4, delay: 2.6, spread: 0.7 });
     await this.wait(4);
     this.runNight();
   }
@@ -224,7 +271,7 @@ export class Game {
       await this.wait(1 / 30);
       const k = THREE.MathUtils.smoothstep(t / dur, 0, 1);
       b.position.lerpVectors(from, to, k);
-      b.rotation.z = -k * 0.6;
+      b.rotation.z = Math.sin(k * Math.PI) * 0.06; // the slab rocks a little as it is dragged
       this.cy.ik.R.w = this.cy.ik.L.w = Math.min(1, t * 2) * (1 - Math.max(0, (t - dur + 0.6) / 0.6));
       this.cy.ik.R.target.copy(b.position).add(V(-2.5, 4.5, -2.5));
       this.cy.ik.L.target.copy(b.position).add(V(-4.5, 3.5, -2.5));
@@ -235,6 +282,7 @@ export class Game {
     this.cy.ik.R = this.cy.ik.L = null;
     this.setDaylight(0);
     this.audio.stomp(b.position, 1.5); this.player.shake = 1.2;
+    this.audio.boom?.('impact', 1.4);
     this.physics.rebuildDynamic();
   }
 
@@ -327,6 +375,7 @@ export class Game {
     this.post.grade.uniforms.get('uFlash').value = 0.35;
     this.audio.sizzle(true); setTimeout(() => this.audio.sizzle(false), 1500);
     this.audio.roar(eye, { dur: 4.5, vol: 1.6, pitch: 1.1, pain: true });
+    this.audio.boom?.('arrival', 1.3);
     this.player.shake = 2.2;
     this.player.setCarry(null);
     this.stakeGlow.intensity = 0;
@@ -347,6 +396,7 @@ export class Game {
     this.cyState.mode = 'blind';
     this.cyState.lying = false;
     this.say('It\'s done! Now he\'ll guard the door… our only way out is with the sheep', 5, 'Odysseus');
+    crewBark(this, 'blind', { n: 3, delay: 6 });
     this.world.interact.filter((i) => i.id === 'straw').forEach((i) => (i.enabled = true));
     await Promise.race([this.wait(55), this.until(() => this.player.disguised && this.phaseT > 12)]);
     this.runGate();
@@ -373,9 +423,11 @@ export class Game {
     this.say('He\'s feeling every sheep as it passes… straw on your back. Go on all fours', 5, 'Eurylochus');
     // release sheep gradually; companions crawl with them
     this.soldiers.filter((s) => s.alive).forEach((s, i) => { s.state = 'crawlOut'; s.crawlDelay = 6 + i * 5; });
-    for (let i = 0; i < 40; i++) {
+    // spread the flock over the same ~64 s the crew needs to crawl out
+    const n = this.flock.count;
+    for (let i = 0; i < n; i++) {
       this.flock.released = i + 1;
-      await this.wait(1.6);
+      await this.wait(64 / n);
       if (this.phase !== 'gate') return;
     }
   }
@@ -438,25 +490,30 @@ export class Game {
   cyMove(dt) {
     const st = this.cyState, r = this.cy.root, nav = this.nav.giant;
     if (st.walkTarget) {
-      // the outer tunnel is a slot far too narrow for a 13 m giant: there he just follows its centre line
-      // until he reaches the part of the tunnel he fits in; everywhere else he walks the grid path
-      const inSlot = r.position.z > 16.5;
-      const wp = inSlot ? [1.5, 15.5] : navSeek(nav, st, r.position, st.walkTarget, dt, 0.9);
+      // in the low entrance tunnel he ducks (see update) and keeps to its centre line;
+      // everywhere else he walks the grid path
+      const inSlot = r.position.z > 14.5;
+      const sz = Math.max(r.position.z - 1.5, 14);
+      const wp = inSlot ? [tunnelCenterX(sz), sz] : navSeek(nav, st, r.position, st.walkTarget, dt, 0.9);
       const final = !inSlot && st.path.length <= 1;
       const d = V(wp[0] - r.position.x, 0, wp[1] - r.position.z);
       const dist = d.length();
       if (final && dist < 0.6) { st.walkTarget = null; st.path = null; this.cy.play('idle'); return; }
       st.heading = Math.atan2(d.x, d.z);
-      const sp = final ? Math.min(st.walkSpeed, dist * 1.5) : st.walkSpeed;
+      // walking pace is slowed down to read as a heavy giant (running stays as it was)
+      const run = st.walkSpeed > 3, pace = run ? 1 : this.CY_WALK_PACE;
+      let sp = (final ? Math.min(st.walkSpeed, dist * 1.5) : st.walkSpeed) * pace;
+      if (st.hurt > 0) sp *= 0.15; // an arrow just went in: he stops short and clutches it
       const dx = (d.x / Math.max(dist, 1e-4)) * sp * dt, dz = (d.z / Math.max(dist, 1e-4)) * sp * dt;
       if (inSlot) { r.position.x += dx; r.position.z += dz; st.blockedT = 0; }
       else if (nav.step(r.position, dx, dz)) st.blockedT = 0;
       else if ((st.blockedT = (st.blockedT || 0) + dt) > 0.8) { st.walkTarget = null; st.path = null; st.blockedT = 0; this.cy.play('idle'); }
       r.position.y = nav.floorY(r.position.x, r.position.z) ?? floorHeightAt(r.position.x, r.position.z);
-      this.cy.play(st.walkSpeed > 3 ? 'run' : 'walk', 0.5, st.walkSpeed > 3 ? 0.35 : 0.42);
+      this.cy.play(run ? 'run' : 'walk', 0.5, run ? 0.35 : 0.42 * pace);
       st.step += dt * sp;
       if (st.step > 3.2) { st.step = 0; this.stomp(); }
     }
+    if (st.hurt > 0) st.hurt -= dt;
     // turn toward heading
     let dh = st.heading - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
     if (!st.lying) r.rotation.y += dh * Math.min(1, dt * 2);
@@ -477,12 +534,14 @@ export class Game {
     const hand = this.cy.bones.RightHand;
     const ik = (this.cy.ik.R = { target: getTarget().clone(), w: 0 });
     st.grabbing = true;
+    this.cy.forceSquat = 0.45; // bend the knees a little to reach down
+    windup *= CY_SLOW;
     this.audio.roar(this.cy.eyeWorld(), { dur: 1.2, vol: 0.4, pitch: 1.2 });
     let caught = false;
     for (let t = 0; t < windup; t += 1 / 30) {
       await this.wait(1 / 30);
       if (st.stun > 0) { this.cy.ik.R = null; st.grabbing = false; return false; }
-      ik.target.lerp(getTarget(), 0.25);
+      ik.target.lerp(getTarget(), 0.12);
       ik.w = Math.min(1, t / windup * 1.3);
     }
     const hp = hand.getWorldPosition(V(0, 0, 0));
@@ -491,49 +550,206 @@ export class Game {
     return caught;
   }
 
-  async cyEat() {
-    const alive = this.soldiers.filter((s) => s.alive && s.state !== 'grabbed');
-    if (!alive.length) return;
-    // pick the closest man
+  // the crewman the giant goes for: whoever just cut him, else the nearest man in the open
+  crewPrey(maxDist = Infinity) {
+    const cp = this.cy.root.position, now = this.time;
+    const men = this.soldiers.filter((s) => s.alive && s.root.visible && s.state !== 'grabbed' && s.state !== 'dead' && s.state !== 'crawlOut');
+    const score = (s) => flat(s.root.position).distanceTo(flat(cp)) - (s.hitAt && now - s.hitAt < 6 ? 8 : 0) + (s.sitting ? 6 : 0);
+    men.sort((a, b) => score(a) - score(b));
+    const m = men[0];
+    return m && flat(m.root.position).distanceTo(flat(cp)) < maxDist ? m : null;
+  }
+
+  async cyEat(prey = null) {
+    if (this._eating) await this.until(() => !this._eating);
+    this._eating = true;
+    try { await this.cyEatOnce(prey); } finally { this._eating = false; this.cy.forceSquat = 0; this.cyState.eatCd = this.time + 16; }
+  }
+
+  async cyEatOnce(prey) {
+    const victim = prey && prey.alive && prey.state !== 'grabbed' ? prey : this.crewPrey();
+    if (!victim) return;
     const cp = this.cy.root.position;
-    alive.sort((a, b) => a.root.position.distanceTo(cp) - b.root.position.distanceTo(cp));
-    const victim = alive[0];
     victim.state = 'frozen';
     this.cyState.mode = 'script';
     const vp = victim.root.position;
     const stand = vp.clone().add(flat(cp).sub(flat(vp)).normalize().multiplyScalar(4.5));
-    await this.cyWalkTo(stand, 2.3);
+    await this.cyWalkTo(stand, 1.8);
     if (this.cyState.stun > 0) { this.cyState.mode = 'tend'; return; }
     this.cyState.heading = Math.atan2(victim.root.position.x - cp.x, victim.root.position.z - cp.z);
     victim.state = 'frozen';
     this.audio.scream(victim.root.position);
+    crewBark(this, 'grab', { who: victim, cooldown: 0 });
     const caught = await this.cyGrab(() => victim.root.position.clone().add(V(0, 1, 0)), 1.2);
     if (!caught || this.cyState.stun > 0 || !victim.alive) { this.cy.ik.R = null; victim.state = 'hide'; this.cyState.mode = 'tend'; return; }
     victim.state = 'grabbed';
+    this.startEatCam(victim);
+    crewBark(this, 'witness', { n: 4, near: vp, delay: 0.4, spread: 0.6 });
     this.say(`${victim.name}！`, 2, '');
     // lift to the mouth
-    const hand = this.cy.bones.RightHand;
-    for (let t = 0; t < 2.2; t += 1 / 30) {
+    this.cy.forceSquat = 0.4;
+    const LIFT = 2.2 * CY_SLOW;
+    this.cy.gripSign = this._gripSign || 1;
+    for (let t = 0; t < LIFT; t += 1 / 30) {
       await this.wait(1 / 30);
       const mouth = this.cy.mouthWorld();
-      const k = THREE.MathUtils.smoothstep(t / 2.2, 0, 1);
-      this.cy.ik.R.target.lerpVectors(this.cy.ik.R.target, mouth.clone().add(V(0, -1.2, 0.5)), 0.08 + k * 0.1);
+      const k = THREE.MathUtils.smoothstep(t / LIFT, 0, 1);
+      const fw = V(Math.sin(this.cy.root.rotation.y), 0, Math.cos(this.cy.root.rotation.y));
+      this.cy.ik.R.target.lerpVectors(this.cy.ik.R.target, mouth.clone().addScaledVector(fw, 3.0).add(V(0, -1.9, 0)), 0.04 + k * 0.05);
       this.cy.ik.R.w = 1;
-      hand.getWorldPosition(victim.root.position); victim.root.position.y -= 1.0;
-      victim.root.rotation.z = Math.sin(t * 20) * 0.3;
+      this.cy.grip = Math.min(GRIP, t / (0.5 * CY_SLOW) * GRIP); // close the fist on him first
+      this.holdInFist(victim, Math.sin(t * 20) * 0.3);
       if (this.cyState.stun > 0) { // dropped!
-        victim.state = 'hide'; victim.root.rotation.z = 0; victim.root.position.y = floorHeightAt(victim.root.position.x, victim.root.position.z);
-        this.cy.ik.R = null; this.say(`He dropped ${victim.name}! Run!`, 3); this.cyState.mode = 'tend'; return;
+        this.cy.grip = 0; victim.state = 'hide'; victim.root.rotation.set(0, victim.root.rotation.y, 0); victim.root.position.y = floorHeightAt(victim.root.position.x, victim.root.position.z);
+        this.endEatCam(); this.cy.ik.R = null; this.say(`He dropped ${victim.name}! Run!`, 3); crewBark(this, 'dropped', { n: 3, cooldown: 2 }); this.cyState.mode = 'tend'; return;
       }
     }
-    const mouth = this.cy.mouthWorld();
-    this.audio.crunch(mouth);
-    this.particles.blood(mouth, V(0, -1, 0), 160, 3);
-    this.decals.add(V(mouth.x, floorHeightAt(mouth.x, mouth.z), mouth.z), 2.2);
+    await this.cyMunch(victim);
+  }
+
+  // one-handed eating: he holds the man round the waist and bites him down in several mouthfuls
+  async cyMunch(victim) {
+    const cy = this.cy, hand = cy.bones.RightHand, ik = cy.ik.R, vb = victim.bmap || {};
+    const fwd = () => V(0, 0, 1).applyQuaternion(cy.root.quaternion).setY(0).normalize();
+    const hold = (k, side = 0) => {
+      // k=0: held at chest height in front of the face, k=1: the man's head in the mouth
+      const m = cy.mouthWorld();
+      return m.add(fwd().multiplyScalar(THREE.MathUtils.lerp(3.0, 1.15, k))).add(V(0, THREE.MathUtils.lerp(-1.9, -0.85, k), 0))
+        .add(V(0, 1, 0).cross(fwd()).multiplyScalar(side));
+    };
+    const gone = [], wounds = [];
+    const P = (b) => b.getWorldPosition(V(0, 0, 0));
+    // where a bitten-off part was: the stump, and the way blood leaves it (out of the body, a little up)
+    const stump = (b) => { const at = P(b), out = b.parent?.isBone ? at.clone().sub(P(b.parent)).normalize() : V(0, 1, 0); return { at, out: out.add(V(0, 0.5, 0)).normalize() }; };
+    const eat = (bone) => { if (bone) { bone.scale.setScalar(0.001); gone.push(bone); wounds.push({ bone, t0: this.time }); } };
+    const bleed = () => { // pulsing arterial jets from every open wound, fading as he bleeds out
+      if (!victim.root.visible) return;
+      for (const w of wounds) {
+        const age = this.time - w.t0, beat = Math.max(0, Math.sin(age * Math.PI * 2 * 1.4));
+        const { at, out } = stump(w.bone);
+        this.particles.spurt(at, out, Math.exp(-age / 4) * (0.3 + 0.7 * beat * beat));
+        if (Math.random() < 0.35) this.particles.drip(at, 1, 0.2);
+      }
+      if (wounds.length && Math.random() < 0.25) this.particles.drip(cy.mouthWorld(), 1, 0.25); // running off his lips
+    };
+    victim.play('run', 0.15, 2.2); // legs kicking in the fist
+    cy.grip = GRIP; cy.gripSign = this._gripSign || 1;
+    let alive = true;
+    const step = async (dur, fn) => {
+      dur *= CY_SLOW;
+      for (let t = 0; t < dur; t += 1 / 30) {
+        await this.wait(1 / 30);
+        fn(Math.min(1, t / dur), t);
+        this.holdInFist(victim, alive ? Math.sin(t * 18) * 0.25 : 0);
+        bleed();
+        if (this.cyState.stun > 0) return false;
+      }
+      return true;
+    };
+    const parts = [vb.head, vb.lArm || vb.lShoulder, vb.spine2 || vb.spine1, null];
+    for (let n = 0; n < parts.length; n++) {
+      const side = (n % 2 ? -1 : 1) * 0.35;
+      // bring him in and lunge
+      if (!(await step(n === 0 ? 0.9 : 0.55, (k) => { const e = THREE.MathUtils.smoothstep(k, 0, 1); ik.target.lerp(hold(e, side * (1 - e)), 0.2); cy.bite = e; cy.chew = 0; }))) break;
+      // snap
+      const mouth = cy.mouthWorld();
+      this.audio.crunch(mouth); this.haptic(40);
+      const sideDir = V(0, 1, 0).cross(fwd()).multiplyScalar(Math.random() < 0.5 ? -1 : 1);
+      this.particles.gore(mouth.clone().addScaledVector(fwd(), 0.4), fwd().multiplyScalar(0.6).add(sideDir).add(V(0, 0.15, 0)), n === 3 ? 260 : 180, 5.5);
+      this.particles.gore(mouth.clone().addScaledVector(fwd(), 0.4), sideDir.clone().negate().add(V(0, -0.4, 0)), 70, 4);
+      this.decals.add(V(mouth.x, floorHeightAt(mouth.x, mouth.z), mouth.z), 1 + n * 0.5);
+      if (n === 0) { alive = false; victim.play('sad_pose', 0.1); crewBark(this, 'eaten', { n: 2, delay: 0.9, spread: 1.4 }); }
+      if (parts[n]) eat(parts[n]);
+      if (n === parts.length - 1) { victim.root.visible = false; break; }
+      // tear the mouthful off: yank the fist down and away, head jerks back
+      if (!(await step(0.35, (k) => { ik.target.lerp(hold(0, side * 2).add(V(0, -0.5, 0)), 0.15); cy.bite = 1 - k * 1.25; }))) break;
+      // the torn end sprays as it comes out of his teeth
+      const last = wounds[wounds.length - 1];
+      if (last && victim.root.visible) { const { at, out } = stump(last.bone); this.particles.gore(at, out.add(V(0, 0.3, 0)), 120, 4.5); }
+      this.particles.drip(hand.getWorldPosition(V(0, 0, 0)), 6, 0.4);
+      // chew
+      const chewDur = 0.8 + Math.random() * 0.5;
+      this.audio.sfx?.('chew', { pos: cy.mouthWorld(), vol: 1, rate: 0.55, wet: 0.5 });
+      if (!(await step(chewDur, (k, t) => { ik.target.lerp(hold(0.1, side), 0.12); cy.bite = -0.25 * (1 - k); cy.chew = Math.sin(t * 7) * 0.6; }))) break;
+    }
+    // swallow and put the arm down
+    await this.wait(0.6 * CY_SLOW);
+    cy.bite = cy.chew = 0; cy.grip = 0;
     this.killSoldier(victim);
-    await this.wait(1.5);
-    this.cy.ik.R = null;
+    await this.wait(0.9);
+    this.endEatCam();
+    cy.ik.R = null;
     this.cyState.mode = 'tend';
+  }
+
+  // the man sits inside the curled fingers: his waist in the hole of the fist, his body running along
+  // the fist's axis (index -> pinky), facing the giant. wiggle = struggling sway about his waist
+  holdInFist(victim, wiggle = 0) {
+    const cy = this.cy, F = cy.rFingers, r = victim.root;
+    const P = (b) => b.getWorldPosition(V(0, 0, 0));
+    const w = P(cy.bones.RightHand);
+    let c, up;
+    if (F[1]?.length >= 3 && F[0]?.length && F[3]?.length) {
+      const k = P(F[1][0]);
+      // centre of the hole the curled fingers make: knuckle, middle-finger joints and the palm
+      c = k.clone().add(P(F[1][1])).add(P(F[1][2])).add(w.clone().lerp(k, 0.55)).multiplyScalar(0.25);
+      up = P(F[0][0]).sub(P(F[3][0])).normalize();
+      if (up.y < 0) up.negate();
+      up.lerp(V(0, 1, 0), 0.35).normalize(); // hang a little toward gravity
+    } else { c = w; up = V(0, 1, 0); }
+    const d = cy.root.position.clone().sub(c); d.addScaledVector(up, -d.dot(up));
+    const z = d.lengthSq() > 1e-6 ? d.normalize() : V(0, 0, 1);
+    const x = up.clone().cross(z).normalize(); z.crossVectors(x, up);
+    r.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, up, z));
+    if (wiggle) r.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1), wiggle));
+    r.position.copy(c);
+    const hips = victim.bmap?.hips;
+    if (hips) { r.updateMatrixWorld(true); r.position.add(c.clone().sub(P(hips))); }
+    else r.position.addScaledVector(up, -0.95);
+  }
+
+  // pulled-back cinematic shot of the whole giant while he eats (clear line of sight, not inside rock)
+  eatCamFrame() {
+    const cy = this.cy, m = cy.mouthWorld(), h = cy.handWorld();
+    return m.lerp(h, 0.4).add(V(0, -2.2, 0));
+  }
+  startEatCam(victim) {
+    const cy = this.cy, tgt = this.eatCamFrame();
+    const f = V(0, 0, 1).applyQuaternion(cy.root.quaternion).setY(0).normalize(), r = V(0, 1, 0).cross(f);
+    // prefer the side the player is on, so the shot reads as "what you are witnessing"
+    const ps = Math.sign(this.player.pos.clone().sub(cy.root.position).dot(r)) || 1;
+    let best = null;
+    for (const dist of [16, 13, 19, 10]) {
+      for (const a of [1.1, 0.85, 1.35, 0.55]) for (const sd of [ps, -ps]) {
+        const dir = f.clone().multiplyScalar(Math.cos(a)).addScaledVector(r, Math.sin(a) * sd);
+        const pos = tgt.clone().addScaledVector(dir, dist); pos.y = Math.max(tgt.y - 2.0, floorHeightAt(pos.x, pos.z) + 1.8);
+        if (rockField(pos.x, pos.y, pos.z) > -1.0) continue;
+        if (this.physics.raycastSegment(tgt, pos)) continue;
+        best = pos; break;
+      }
+      if (best) break;
+    }
+    if (!best) return; // nowhere clear to put the camera: stay in the player's view
+    this.eatCam = { pos: best, look: tgt.clone(), w: 0, on: true, until: this.time + EAT_CAM_HOLD };
+    this._eatLock = !this.player.locked; if (this._eatLock) this.player.locked = true;
+  }
+  endEatCam() {
+    if (!this.eatCam) return;
+    this.eatCam.on = false;
+    if (this._eatLock) { this.player.locked = false; this._eatLock = false; }
+  }
+  updateEatCam(dt) {
+    const c = this.eatCam; if (!c) return;
+    if (c.on && this.time >= c.until) this.endEatCam(); // only a glimpse, then control comes straight back
+    c.w = THREE.MathUtils.clamp(c.w + (c.on ? dt / 0.45 : -dt / 0.5), 0, 1);
+    if (!c.on && c.w <= 0) { this.eatCam = null; return; }
+    c.look.lerp(this.eatCamFrame(), Math.min(1, dt * 1.5));
+    const e = c.w * c.w * (3 - 2 * c.w);
+    const cam = this.camera, from = cam.position.clone(), fq = cam.quaternion.clone();
+    cam.position.lerpVectors(from, c.pos, e);
+    cam.lookAt(c.look);
+    cam.quaternion.copy(fq.slerp(cam.quaternion.clone(), e));
+    cam.fov = THREE.MathUtils.lerp(cam.fov, 50, e); cam.updateProjectionMatrix();
   }
 
   killSoldier(s) {
@@ -572,6 +788,7 @@ export class Game {
     if (this.cyState.mode !== 'sleep') return;
     this.cyState.mode = 'script';
     this.say('No, he\'s waking up!', 3);
+    crewBark(this, 'waking', { n: 3 });
     this.cy.eyeOpen = 1;
     await this.standUp();
     this.audio.roar(this.cy.eyeWorld(), { dur: 2.5, vol: 1 });
@@ -591,10 +808,25 @@ export class Game {
 
   cyThink(dt) {
     const st = this.cyState, P = this.player, cy = this.cy;
+    if (!st.grabbing && !this._eating && !P.grabbed) cy.forceSquat = 0;
+    else if (P.grabbed) cy.forceSquat = 0.3;
     if (st.stun > 0) {
       st.stun -= dt;
       cy.play('idle', 0.3, 2.2);
       cy.eyeOpen = 0;
+      if (st.eyePain > 0) {
+        // shot in the eye: he drops into a crouch, both hands clamped over the eye, rocking in pain
+        st.eyePain -= dt;
+        const k = Math.min(1, st.eyePain / 0.8);               // rises again over the last 0.8 s
+        cy.forceSquat = 0.85 * k; cy.squatRate = 7;
+        cy.writhe = k;
+        const eye = cy.eyeWorld(), f = V(Math.sin(cy.root.rotation.y), 0, Math.cos(cy.root.rotation.y)), r = V(f.z, 0, -f.x);
+        const hk = cy.height / 13;
+        cy.ik.R = { target: eye.clone().addScaledVector(f, 0.9 * hk).addScaledVector(r, -0.35 * hk), w: 0.95 * k };
+        cy.ik.L = { target: eye.clone().addScaledVector(f, 0.9 * hk).addScaledVector(r, 0.35 * hk).add(V(0, -0.3 * hk, 0)), w: 0.95 * k };
+        if (Math.random() < dt * 0.6) this.audio.cyGroan?.(eye, { vol: 0.9 });
+        if (st.eyePain <= 0 || st.stun <= 0) { st.eyePain = 0; cy.writhe = 0; cy.forceSquat = 0; cy.squatRate = 1.2; cy.ik.R = null; cy.ik.L = null; }
+      }
       if (st.stun <= 0) { cy.eyeOpen = 1; st.alert = 1.2; st.noiseAt = P.pos.clone(); }
       return;
     }
@@ -617,7 +849,10 @@ export class Game {
       st.alert = Math.max(0, st.alert - dt * 0.08);
       if (st.alert > 1 && st.noiseAt && st.noiseAt.distanceTo(P.pos) < 3) this.alertSys.spotted();
       else if (st.alert > 0.35) this.alertSys.suspicious();
-      if (st.alert > 1 && st.noiseAt && !st.grabbing) {
+      // his men first: while crewmen are within reach he goes for them, not for Odysseus (unless you are right under his hand)
+      const prey = st.mode === 'tend' && st.alert > 1 && !st.grabbing && !this._eating && this.time > (st.eatCd || 0) ? this.crewPrey(18) : null;
+      if (prey && !(dP < 4 && !P.hiddenInStraw)) { st.alert = 0.6; st.walkTarget = null; this.cyEat(prey); }
+      else if (st.alert > 1 && st.noiseAt && !st.grabbing) {
         // hunt the source
         const target = st.noiseAt;
         const dT = flat(target).distanceTo(flat(cp));
@@ -666,6 +901,7 @@ export class Game {
     const st = this.cyState;
     if (st.grabbing) return;
     this.say('He\'s coming! Aim for the eye!', 1.5);
+    crewBark(this, 'spotted', { n: 3 });
     const caught = await this.cyGrab(() => this.player.pos.clone().add(V(0, 1.2, 0)), st.mode === 'blind' ? 1.0 : 1.5);
     if (caught && !this.player.dead) this.caughtPlayer(st.mode === 'blind' ? 'The blind giant\'s hand felt you out.' : 'The giant\'s hand closed around you.');
     else { this.cy.ik.R = null; st.alert = 0.7; }
@@ -722,8 +958,9 @@ export class Game {
   }
 
   // projectile vs cyclops / soldiers
-  projectileHit(a, b, p) {
-    if (!this.cy.root.visible) return false;
+  // which hit zone of the giant a segment passes through (eye wins), or null
+  zoneAlong(a, b) {
+    if (!this.cy.root.visible) return null;
     const seg = new THREE.Line3(a, b), cp = V(0, 0, 0);
     let best = null;
     for (const z of this.cy.zones) {
@@ -731,31 +968,173 @@ export class Game {
       const d = cp.distanceTo(z.world);
       if (d < z.r && (!best || (z.name === 'eye') || d / z.r < best.k)) { best = { z, k: d / z.r, at: cp.clone() }; if (z.name === 'eye') break; }
     }
+    return best;
+  }
+
+  projectileHit(a, b, p) {
+    const best = this.zoneAlong(a, b);
     if (!best) return false;
     const st = this.cyState;
     const dir = b.clone().sub(a).normalize();
     if (best.z.name === 'eye' && !this.cy.blind) {
-      this.audio.impact(best.at, 'flesh');
-      this.audio.roar(best.at, { dur: 2.2, vol: 1.3, pain: true, pitch: 1.2 });
-      this.particles.blood(best.at, dir.clone().negate(), 80, 3);
+      this.arrowFx.impact(best.at, null, p);
+      if (this.audio.fleshHit && this.audio.S?.('flesh')) this.audio.fleshHit(best.at, { crit: true }); else this.audio.impact(best.at, 'flesh');
+      // a huge scream: the roar, a shriek on top, a second wail as he doubles over
+      this.audio.roar(best.at, { dur: 4, vol: 1.9, pain: true, pitch: 1.2 });
+      this.audio.cyShriek?.(best.at, { vol: 1.5 });
+      this.audio.cyGroan?.(best.at, { vol: 1.3, when: 1.6 });
+      this.audio.cyShriek?.(best.at, { vol: 1.1, when: 2.4 });
+      this.audio.boom?.('impact', 1.1);
+      this.particles.blood(best.at, dir.clone().negate(), 160, 4);
+      this.hitFlash(true);
       st.stun = p.kind === 'spear' ? 6 : 4.5;
-      this.cy.ik.R = null;
-      this.player.shake = 0.8;
+      st.eyePain = st.stun;
+      this.cy.ik.R = null; this.cy.ik.L = null;
+      this.cy.jolt = 1; this.cy.joltSide = Math.random() < 0.5 ? -1 : 1;
+      this.player.shake = 1.4;
       this.say('Hit the eye! Get away while you can', 2.5);
       this.hitMarker(true);
       if (st.mode === 'sleep') this.wakeUp();
     } else {
+      this.arrowFx.impact(best.at, null, p);
       this.audio.impact(best.at, 'flesh');
-      this.particles.blood(best.at, dir.clone().negate(), 25, 2);
+      this.particles.blood(best.at, dir.clone().negate(), 55, 2.6);
       this.hitMarker(false);
-      // arrows stick in the giant
-      const m = p.mesh.clone(); m.position.copy(best.at); m.lookAt(best.at.clone().add(dir));
-      best.z.obj.attach(m);
+      this.hitFlash(false);
+      this.player.shake = Math.max(this.player.shake, 0.35);
+      // arrows stick in the giant: the tip goes in at the skin, the shaft and fletching stay out
+      const stuck = this.stickInGiant(p, best, a, dir);
+      // the body jerks away from the arrow every time (even mid-volley)
+      if (!this.cy.blind || st.mode !== 'script') { this.cy.jolt = 1; this.cy.joltSide = dir.x * Math.cos(this.cy.root.rotation.y) - dir.z * Math.sin(this.cy.root.rotation.y) > 0 ? 1 : -1; }
       st.alert = Math.min(2, st.alert + 0.8); st.noiseAt = this.player.pos.clone();
-      if (Math.random() < 0.5) this.audio.roar(best.at, { dur: 1.2, vol: 0.6, pitch: 1.1 });
-      if (st.mode === 'sleep') this.wakeUp();
+      const wasAsleep = st.mode === 'sleep';
+      // every hit hurts: he cries out, flinches and clutches the wound (not on every arrow of a quick volley)
+      if (this.time > (this._groanT || 0)) {
+        this._groanT = this.time + 1.6;
+        this.audio.roar(stuck, { dur: 2.4, vol: 1.6, pitch: 1.05, pain: true });
+        this.audio.cyShriek?.(stuck, { vol: 1.0, when: 0.05 });  // a high, strangled yelp on top
+        this.audio.cyGroan?.(stuck, { vol: 0.9, when: 1.1 + Math.random() * 0.4 }); // a second, lower groan as he holds it
+        if (!wasAsleep) this.cyHurt(best.z, stuck);
+      }
+      if (wasAsleep) this.wakeUp();
     }
     return true;
+  }
+
+  // stick a copy of the projectile into the giant's skin (ray vs the skinned mesh), wound decal included.
+  // returns the world point where it went in
+  stickInGiant(p, best, a, dir) {
+    const cy = this.cy;
+    let at = cy.surfaceHit(a, dir, a.distanceTo(best.at) + best.z.r * 2);
+    if (!at) at = cy.surfaceHit(best.at.clone().addScaledVector(dir, -best.z.r * 1.6), dir, best.z.r * 3.2);
+    if (!at) at = best.at.clone();
+    const bone = at.bone || best.z.obj; // attach to the bone that actually moves that skin
+    const m = p.mesh.clone();
+    if (p.glow) m.remove(m.children[m.children.length - 1]); // the flight glow sprite stays with the flying arrow
+    const S = p.kind === 'arrow' ? 3.6 : 1.3;
+    m.scale.setScalar(S);
+    // arrow tip sits at +0.43 (spear +1.26): bury about a third of it
+    const tipZ = p.kind === 'arrow' ? 0.43 : 1.26, buried = p.kind === 'arrow' ? 0.3 : 0.7;
+    m.position.copy(at).addScaledVector(dir, -(tipZ - buried) * S);
+    m.lookAt(m.position.clone().add(dir));
+    this.scene.add(m); m.updateMatrixWorld(true); bone.attach(m);
+    // a dark wound where it went in
+    const w = new THREE.Mesh(new THREE.CircleGeometry(0.16 + Math.random() * 0.06, 10), this._woundMat ||= new THREE.MeshStandardMaterial({ color: 0x5a0805, roughness: 0.2, polygonOffset: true, polygonOffsetFactor: -2 }));
+    w.position.copy(at).addScaledVector(dir, -0.02); w.lookAt(at.clone().sub(dir));
+    this.scene.add(w); w.updateMatrixWorld(true); bone.attach(w);
+    // a marker at the wound that follows the bone, so the hand can find it while he moves
+    const mark = new THREE.Object3D(); mark.position.copy(at).addScaledVector(dir, -0.55 * (cy.height / 13));
+    this.scene.add(mark); mark.updateMatrixWorld(true); bone.attach(mark);
+    this._lastWound = { mark, zone: best.z };
+    this.addBleed(bone, at, dir);
+    return at;
+  }
+
+  // an open wound around the shaft: pulsing spurts at first, then a trickle running down the skin and dripping
+  addBleed(bone, at, dir) {
+    const out = dir.clone().negate();
+    // points that ride on the bone: the wound mouth (just outside the skin) and one a bit further out along the shaft
+    const mouth = new THREE.Object3D(); mouth.position.copy(at).addScaledVector(out, 0.06);
+    const ahead = new THREE.Object3D(); ahead.position.copy(at).addScaledVector(out, 1);
+    for (const o of [mouth, ahead]) { this.scene.add(o); o.updateMatrixWorld(true); bone.attach(o); }
+    // a run of blood down the skin: blobs projected onto the body below the wound, revealed one by one as it trickles down
+    const down = new THREE.Vector3(0, -1, 0).addScaledVector(out, out.y).normalize();
+    const side = new THREE.Vector3().crossVectors(out, down).normalize();
+    const run = [], step = 0.26 * (this.cy.height / 13), n = 7 + ((Math.random() * 5) | 0);
+    let wig = 0;
+    for (let i = 0; i < n; i++) {
+      wig += (Math.random() - 0.5) * 0.12;
+      const probe = at.clone().addScaledVector(down, step * (i + 0.5)).addScaledVector(side, wig).addScaledVector(out, 2.5);
+      const hit = this.cy.surfaceHit(probe, out.clone().negate(), 4);
+      if (!hit) break;
+      const blob = new THREE.Mesh(this._blobGeo ||= new THREE.PlaneGeometry(1, 1), this._streakMat ||= this.makeStreakMat());
+      blob.position.copy(hit).addScaledVector(out, 0.05);
+      blob.up.copy(down).negate(); blob.lookAt(blob.position.clone().add(out));
+      const w = (0.3 - i * 0.012) * (0.8 + Math.random() * 0.4);
+      blob.scale.set(w, step * 1.6, 1); blob.visible = false; blob.renderOrder = 2;
+      this.scene.add(blob); blob.updateMatrixWorld(true); (hit.bone || bone).attach(blob);
+      run.push(blob);
+    }
+    (this.bleeds ||= []).push({ mouth, ahead, run, t: 0, beat: Math.random() * 6 });
+    if (this.bleeds.length > 14) this.bleeds.shift(); // oldest wounds just stop bleeding; the arrow stays
+  }
+
+  makeStreakMat() {
+    // one soft, slightly glossy vertical smear; overlapping ones make a continuous run
+    const c = document.createElement('canvas'); c.width = 64; c.height = 128; const g = c.getContext('2d');
+    for (let i = 0; i < 3; i++) {
+      const x = 32 + (Math.random() - 0.5) * 10, w = 16 + Math.random() * 10;
+      const gr = g.createRadialGradient(x, 64, 2, x, 64, 60); gr.addColorStop(0, 'rgba(120,6,4,0.95)'); gr.addColorStop(0.6, 'rgba(100,5,3,0.8)'); gr.addColorStop(1, 'rgba(90,4,2,0)');
+      g.fillStyle = gr; g.beginPath(); g.ellipse(x, 64, w, 60, 0, 0, 6.28); g.fill();
+    }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({ map: t, transparent: true, depthWrite: false, roughness: 0.15, emissive: 0x1a0000, polygonOffset: true, polygonOffsetFactor: -3 });
+  }
+
+  updateBleeds(dt) {
+    if (!this.bleeds?.length || !this.cy.root.visible) return;
+    const p = new THREE.Vector3(), q = new THREE.Vector3(), d = new THREE.Vector3();
+    for (const b of this.bleeds) {
+      b.t += dt;
+      b.mouth.getWorldPosition(p); b.ahead.getWorldPosition(q); d.subVectors(q, p).normalize();
+      // first ~3 s: heartbeat spurts out of the wound
+      if (b.t < 3) {
+        const beat = Math.max(0, Math.sin((b.t + b.beat) * 7.5)) ** 3 * (1 - b.t / 3);
+        this.particles.spurt(p, d.clone().add(new THREE.Vector3(0, -0.4, 0)), beat * 1.3, 2.4);
+      }
+      // then a steady trickle that slows over a minute but never quite stops while the arrow is in
+      const rate = Math.max(1.2, 10 * Math.exp(-b.t / 25));
+      b.acc = (b.acc || 0) + rate * dt;
+      while (b.acc > 1) { b.acc -= 1; this.particles.drip(p.clone().add(new THREE.Vector3(0, -0.15, 0)), 1, 0.2, 2.6); }
+      // the streak runs down the skin
+      for (let i = 0; i < b.run.length; i++) if (!b.run[i].visible && b.t > 0.3 + i * 0.35) b.run[i].visible = true;
+    }
+  }
+
+  // pain reaction: flinch, stop for a moment, and press a free hand over the arrow
+  async cyHurt(zone, at) {
+    const cy = this.cy, st = this.cyState;
+    if (st.lying || st.stun > 0 || this.cy.blind && st.mode === 'script') return;
+    st.hurt = 1.6;
+    cy.hurt = 1;
+    const mark = this._lastWound?.mark;
+    if (!mark) return;
+    // which hand: never the arm that was hit, never a hand that is busy grabbing / eating
+    const hitRight = at.distanceTo(cy.bones.RightArm.getWorldPosition(new THREE.Vector3())) < at.distanceTo(cy.bones.LeftArm.getWorldPosition(new THREE.Vector3()));
+    let side = hitRight ? 'R' : 'L';
+    if (zone.name === 'arm') side = zone.obj === cy.bones.RightArm || zone.obj === cy.bones.RightForeArm ? 'L' : 'R';
+    const busy = (s) => !!cy.ik[s] || (s === 'R' && (st.grabbing || this._eating || this.player.grabbed || this._sweeping));
+    if (busy(side)) side = side === 'R' ? 'L' : 'R';
+    if (busy(side)) return;
+    const ik = (cy.ik[side] = { target: mark.getWorldPosition(new THREE.Vector3()), w: 0 });
+    const dur = 2.2;
+    for (let t = 0; t < dur; t += 1 / 30) {
+      await this.wait(1 / 30);
+      if (cy.ik[side] !== ik) return; // something else took the arm (a grab): let it
+      mark.getWorldPosition(ik.target);
+      ik.w = Math.min(1, t / 0.3) * Math.min(1, (dur - t) / 0.5);
+    }
+    if (cy.ik[side] === ik) cy.ik[side] = null;
   }
 
   // ------------------------------------------------------------------ interactions
@@ -810,17 +1189,22 @@ export class Game {
   // ------------------------------------------------------------------ soldiers
   updateSoldiers(dt, t) {
     const cp = this.cy.root.position;
+    updateSquad(this, dt);
     for (const s of this.soldiers) {
       if (!s.alive) continue;
+      if (s.cower && updateCower(this, s, dt)) continue;
       s.mixer.update(dt);
       if (s.state === 'grabbed') continue;
       const r = s.root;
       let target = null, speed = 1.2, anim = 'idle';
-      if (s.state === 'frozen') { anim = 'sneak_pose'; const d = flat(cp).sub(flat(r.position)); r.rotation.y = Math.atan2(d.x, d.z); }
+      if (s.state === 'fight') { const f = squadStep(this, s, dt); target = f.target; speed = f.speed || speed; anim = f.anim; }
+      else if (s.state === 'frozen') { anim = 'sneak_pose'; const d = flat(cp).sub(flat(r.position)); r.rotation.y = Math.atan2(d.x, d.z); }
       else if (s.state === 'hide' || s.state === 'panic') {
         // keep away from the giant, press against the east wall
         const away = flat(r.position).sub(flat(cp)); const d = away.length();
-        if (this.cy.root.visible && d < 11) { target = r.position.clone().add(away.normalize().multiplyScalar(3)); speed = s.state === 'panic' ? 4.5 : 3.5; anim = 'run'; }
+        // hysteresis: start running below 11 m, keep going until 14 m (else he dithers on the 11 m line: run out, walk back, run out)
+        s.scared = this.cy.root.visible && d < (s.scared ? 14 : 11);
+        if (s.scared) { target = r.position.clone().add(away.normalize().multiplyScalar(3)); speed = s.state === 'panic' ? 4.5 : 3.5; anim = 'run'; }
         else if (r.position.distanceTo(s.home) > 1) { target = s.home; speed = 1.4; anim = 'walk'; }
         else anim = this.cy.root.visible ? 'sneak_pose' : 'idle';
       } else if (s.state === 'crawlOut') {
@@ -851,16 +1235,28 @@ export class Game {
           const moved = Math.hypot(r.position.x - ox, r.position.z - oz);
           s.stuckT = moved < speed * dt * 0.3 ? (s.stuckT || 0) + dt : 0;
           if (s.stuckT > 0.6) { s.stuckT = 0; s.goal = null; s.path = null; s.home = r.position.clone(); anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle'; }
-          const h = Math.atan2(d.x, d.z); let dh = h - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); r.rotation.y += dh * Math.min(1, dt * 6);
+          // face where he is really going (smoothed velocity), not the raw waypoint: sliding along a wall
+          // or a path corner flips the waypoint direction frame to frame and made him shiver on the spot
+          if (moved > 1e-4) { const k = Math.min(1, dt * 8); s._vx = (s._vx || 0) * (1 - k) + (r.position.x - ox) / dt * k; s._vz = (s._vz || 0) * (1 - k) + (r.position.z - oz) / dt * k; }
+          const fx = Math.hypot(s._vx || 0, s._vz || 0) > 0.2 ? s._vx : d.x, fz = Math.hypot(s._vx || 0, s._vz || 0) > 0.2 ? s._vz : d.z;
+          const h = Math.atan2(fx, fz); let dh = h - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); r.rotation.y += dh * Math.min(1, dt * 6);
         }
       }
-      const sp = Math.hypot(r.position.x - (s._px ?? r.position.x), r.position.z - (s._pz ?? r.position.z)) / Math.max(dt, 1e-4);
+      let sp = Math.hypot(r.position.x - (s._px ?? r.position.x), r.position.z - (s._pz ?? r.position.z)) / Math.max(dt, 1e-4);
       s._px = r.position.x; s._pz = r.position.z;
-      if ((anim === 'walk' || anim === 'run') && sp < 0.15) anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle';
-      s.play(anim, 0.3, anim === 'walk' ? Math.max(0.5, sp / 1.3) : anim === 'run' ? Math.max(0.6, sp / 4) : 1);
+      if (sp > 12) sp = 0; // teleported (body swap, checkpoint)
+      // low-passed speed + on/off hysteresis: one blocked frame must not flip walk -> idle -> walk
+      s._sp = (s._sp ?? sp) + (sp - (s._sp ?? sp)) * Math.min(1, dt * 6);
+      if (!target) s._sp = Math.min(s._sp, sp); // stopped on purpose: settle at once
+      s._moving = s._sp > (s._moving ? 0.12 : 0.35);
+      if (!s._moving) { s._vx = 0; s._vz = 0; }
+      if ((anim === 'walk' || anim === 'run') && !s._moving) anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle';
+      s.play(anim, 0.3, anim === 'walk' ? Math.max(0.5, s._sp / 1.3) : anim === 'run' ? Math.max(0.6, s._sp / 4) : 1);
       if (s.state === 'crawlOut') { r.scale.y = r.scale.x * 0.6; } // hunched under straw
       if (s.torchLight) s.torchLight.intensity = 16 + Math.sin(t * 17 + s.home.x) * 3;
     }
+    updateCrewFight(this);
+    poseLeader(this);
   }
 
   // ------------------------------------------------------------------ gate check
@@ -975,8 +1371,16 @@ export class Game {
     const slow = 1 - (this.timeScale - 0.2) / 0.8;   // 0..1
     this._slowFx = THREE.MathUtils.clamp(slow, 0, 1);
     // cinematic look: desaturate, deepen the vignette, a touch of aberration
-    this.post.vignette.darkness = 0.72 + this._slowFx * 0.2;
+    // bow focus: edge blur + a darker vignette while drawing
+    const foc = this.player.focus || 0;
+    if (this.post.edgePass) {
+      this.post.edgePass.enabled = foc > 0.01;
+      this.post.edgeBlur.uniforms.get('uAmt').value = foc;
+      this.post.edgeBlur.uniforms.get('uAspect').value = this.camera.aspect;
+    }
+    this.post.vignette.darkness = 0.72 + this._slowFx * 0.2 + foc * 0.18;
     this.post.ca.offset.set(0.0006 + this._slowFx * 0.0022, 0.0004 + this._slowFx * 0.0014);
+    if (this.post.caPass) this.post.caPass.enabled = this._slowFx > 0.02 || !!this.photo?.on;
     if (this.post.hs) this.post.hs.saturation = -0.08 - this._slowFx * 0.35;
     this.audio.setSlowMo?.(this._slowFx);
     document.body.classList.toggle('slowmo', this._slowFx > 0.3);
@@ -996,8 +1400,16 @@ export class Game {
     this.stamWheel.classList.toggle('exhausted', P.exhausted);
   }
 
+  // a red pulse at the screen edges + a white pop so a hit on the giant is unmistakable
+  hitFlash(critical) {
+    let el = this._hitFlashEl;
+    if (!el) { el = this._hitFlashEl = document.createElement('div'); el.id = 'hitflash'; document.getElementById('hud').appendChild(el); }
+    el.classList.remove('on', 'crit'); void el.offsetWidth;
+    el.classList.add('on'); if (critical) el.classList.add('crit');
+    const fl = this.post.grade.uniforms.get('uFlash'); fl.value = Math.max(fl.value, critical ? 0.3 : 0.12);
+  }
   hitMarker(critical) {
-    this.slowPunch = Math.max(this.slowPunch || 0, critical ? 0.3 : 0.07); // hit-stop
+    this.slowPunch = Math.max(this.slowPunch || 0, critical ? 0.3 : 0.12); // hit-stop
     this.haptic(critical ? 90 : 30);
     const c = this.hud.cross;
     c.classList.remove('hit', 'crit'); void c.offsetWidth;
@@ -1019,6 +1431,7 @@ export class Game {
       if (this.input.pressed('KeyP')) this.photo.toggle();
       if (this.photo.on) { this.timeScale = 0; this.photo.update(dtReal); this.input.endFrame(); return; }
     }
+    if (this.help?.on && this.started) { this.timeScale = 0; this.input.endFrame(); return; }
     this.updateBulletTime(dtReal);
     if (!this.started) { this.cy.update(dt); return; }
     this.time += dt; this.phaseT += dt;
@@ -1030,6 +1443,7 @@ export class Game {
     this.wheel.update(this.input);
     this.player.update(dt, t, dtReal);
     if (this.camOverride) { this.camera.position.copy(this.camOverride); this.camera.lookAt(this.camTarget); }
+    else this.updateEatCam(dt);
     this.radar.update(dtReal);
     this.meter.update(dtReal);
     // hiding in a straw pile (crouched/prone right next to it)
@@ -1046,13 +1460,20 @@ export class Game {
     }
     if (this.cy.root.visible) {
       if (this.cyState.mode !== 'sleep' && this.cyState.mode !== 'gate') this.cyMove(dt);
+      // the entrance tunnel is only ~8 m high past its mouth: the giant ducks to pass through it
+      const cz = this.cy.root.position.z, wantCrouch = THREE.MathUtils.smoothstep(cz, 12.3, 14.3);
+      this.cy.crouch = (this.cy.crouch || 0) + (wantCrouch - (this.cy.crouch || 0)) * Math.min(1, dt * 3);
+      this.cy.crouchDepth = 1.6;
       this.cyThink(dt);
       this.cy.update(dt);
     }
     this.doorShut = this.world.boulder.position.distanceTo(this.world.doorClosed) < 2;
     this.updateSoldiers(dt, t);
     this.flock.update(dt, t, { player: this.player, cyclops: this.cy, nav: this.nav.man });
+    this.frameNo = (this.frameNo || 0) + 1;
+    this.updateBleeds(dt);
     this.particles.update(dt);
+    this.arrowFx.update(dt);
     this.interactions();
     this.gateCheck();
     // audio listener
@@ -1067,6 +1488,9 @@ export class Game {
     this.hud.status.innerHTML = `<div class="hp"><div style="width:${Math.max(0, P.hp)}%"></div></div>Men ${this.soldiers.filter((s) => s.alive).length} / 12${P.disguised ? '<br>Wearing straw' : ''}${P.prone ? '<br>Prone' : P.crouch ? '<br>Crouching' : ''}${P.climbing ? '<br>Climbing' : ''}`;
     this.hud.cross.classList.toggle('aim', P.aim > 0.5 || P.drawing);
     this.hud.cross.style.setProperty('--draw', P.draw.toFixed(3));
+    this.hud.cross.classList.toggle('full', P.drawing && P.draw >= 0.999);
+    { const z = this.arrowFx.aimZone, c = this.hud.cross;
+      c.classList.toggle('weak', z === 'eye'); c.classList.toggle('head', z === 'head'); c.classList.toggle('onbody', !!z && z !== 'eye' && z !== 'head'); }
     this.updateStaminaWheel();
     this.input.endFrame();
   }

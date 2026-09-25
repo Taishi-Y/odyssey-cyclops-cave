@@ -1,4 +1,6 @@
 import { installFoley } from './foley.js';
+import { installSamples, installLowEnd, installBody } from './samples.js';
+import { installVoices } from './voices.js';
 // Procedural sound design (WebAudio): cave ambience, fire, giant footsteps, roars, sheep, bow, impacts, score.
 export class Audio {
   constructor() {
@@ -24,6 +26,7 @@ export class Audio {
     this.brownBuf = this.makeBrown(4);
     this.startAmbience();
     this.loadVoice();
+    this.loadCrewVoices();
   }
   // Polyphemus' real voice (Bill Irwin, from the YouTube clip cTEaP8VxN6o): the prayer to Poseidon.
   // Phrases (sec): 0.15-2.35 / 2.5-6.65 / 6.75-10.15 / 10.2-13.6
@@ -217,6 +220,16 @@ export class Audio {
     o.connect(g); this.out(g, 0.3); o.start(t); o.stop(t + 0.4);
     this.whoosh(0.25 * power);
   }
+  // soft two-note lock-on tick when the aim lands on the eye
+  uiTick() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    [1320, 1760].forEach((f, i) => {
+      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + i * 0.06); g.gain.exponentialRampToValueAtTime(0.07, t + i * 0.06 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.06 + 0.12);
+      o.connect(g); this.out(g, 0.1); o.start(t + i * 0.06); o.stop(t + i * 0.06 + 0.15);
+    });
+  }
   whoosh(vol = 0.3) { if (!this.ctx) return; const ctx = this.ctx, t = ctx.currentTime, s = this.noiseSrc(); const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.setValueAtTime(3000, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.3); const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35); s.connect(f).connect(g); this.out(g, 0.3); s.start(t, Math.random(), 0.4); }
   impact(pos, kind = 'rock') {
     if (!this.ctx) return;
@@ -274,3 +287,7 @@ export class Audio {
   }
 }
 installFoley(Audio);
+installSamples(Audio);
+installVoices(Audio);
+installLowEnd(Audio);
+installBody(Audio);

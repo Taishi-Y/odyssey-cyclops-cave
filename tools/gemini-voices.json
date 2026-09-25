@@ -1,0 +1,15 @@
+{
+ "sailor": "voice_f60bdo2fd8j9",
+ "captain": "voice_s90vtg02goco",
+ "deep1": "ERR {\n  \"error\": {\n    \"code\": 400,\n    \"message\": \"Generated voice prompt was flagged by safety policies.\",\n    \"status\": \"INVALID_ARGUMENT\"\n  }\n}\n",
+ "deep2": "voice_ni7y89yhbixv",
+ "deep3": "voice_bcrwwe2ttz3m",
+ "crewC": "voice_urc3sgmpoltb",
+ "crewD": "voice_aajwjh9xnbx4",
+ "crewE": "voice_u2isn9xm3gwm",
+ "crewF": "voice_h405uzo226cp",
+ "odysseus": "voice_1j1pt7e76gg1",
+ "tenor": "voice_8ovvdkfku2h5",
+ "mid": "voice_ql8hlex0e24f",
+ "wiry": "voice_tosko6w4v4mw"
+}

@@ -1,3 +1,4 @@
+import { crewBark } from './voices.js';
 import * as THREE from 'three';
 
 // ============================================================================================
@@ -113,6 +114,7 @@ export class AlertSystem {
       this.showMark('!');
       G.audio.alertSting?.();
       G.slowPunch = 0.5; // brief freeze-frame punch, like the MGS "!" moment
+      crewBark(G, 'spotted', { n: 2, delay: 0.3 });
     }
     this.phase = 'ALERT'; this.timer = 20;
   }

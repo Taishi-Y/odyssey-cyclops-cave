@@ -12,9 +12,16 @@ function boneMap(root) {
 }
 function firstChildBone(b) { return b.children.find((c) => c.isBone); }
 
-export function retargetClips(srcRoot, srcClips, tgtRoot, fps = 30) {
+// hipsMotion: also transfer the pelvis bob / sway (scaled by hip height), for mocap-like locomotion clips
+// chain: aim each bone along its main chain (Spine2 -> Neck, not -> a shoulder) when aligning the rest poses
+export function retargetClips(srcRoot, srcClips, tgtRoot, fps = 30, { hipsMotion = false, chain = false } = {}) {
   srcRoot.updateMatrixWorld(true); tgtRoot.updateMatrixWorld(true);
   const S = boneMap(srcRoot), T = boneMap(tgtRoot);
+  let H = null;
+  if (hipsMotion && S.has('Hips') && T.has('Hips')) {
+    const s0 = S.get('Hips').getWorldPosition(new THREE.Vector3()), t0 = T.get('Hips').getWorldPosition(new THREE.Vector3());
+    H = { s0, t0, k: t0.y / s0.y, inv: T.get('Hips').parent.matrixWorld.clone().invert(), v: new THREE.Vector3() };
+  }
   const names = [...T.keys()].filter((n) => S.has(n));
   // topological order (parents first)
   const order = [];
@@ -28,7 +35,11 @@ export function retargetClips(srcRoot, srcClips, tgtRoot, fps = 30) {
   const a = new THREE.Vector3(), b = new THREE.Vector3(), p = new THREE.Vector3(), c = new THREE.Vector3();
   for (const n of order) {
     const tb = T.get(n), sb = S.get(n);
-    const tc = firstChildBone(tb), sc = sb.children.find((x) => x.isBone && T.has(clean(x.name)) && tc && clean(x.name) === clean(tc.name)) || firstChildBone(sb);
+    // prefer a child that both rigs share (Meshy heads also carry a forward-pointing 'headfront' bone)
+    const side = (x) => /Shoulder|UpLeg/.test(clean(x.name)) ? 1 : 0;
+    const shared = tb.children.filter((x) => x.isBone && S.has(clean(x.name)));
+    if (chain) shared.sort((x, y) => side(x) - side(y));
+    const tc = shared[0] || firstChildBone(tb), sc = sb.children.find((x) => x.isBone && T.has(clean(x.name)) && tc && clean(x.name) === clean(tc.name)) || firstChildBone(sb);
     if (tc && sc && !/Hips/.test(n)) {
       tb.getWorldPosition(p); tc.getWorldPosition(c); a.subVectors(c, p).normalize();
       sb.getWorldPosition(p); sc.getWorldPosition(c); b.subVectors(c, p).normalize();
@@ -55,6 +66,7 @@ export function retargetClips(srcRoot, srcClips, tgtRoot, fps = 30) {
     const times = new Float32Array(frames);
     const vals = new Map(order.map((n) => [n, new Float32Array(frames * 4)]));
     const tgtWorld = new Map();
+    const hipsPos = H ? new Float32Array(frames * 3) : null;
     for (let f = 0; f < frames; f++) {
       const t = Math.min(clip.duration, f / fps);
       times[f] = t;
@@ -72,9 +84,11 @@ export function retargetClips(srcRoot, srcClips, tgtRoot, fps = 30) {
         const local = pw.invert().multiply(tw);
         local.toArray(vals.get(n), f * 4);
       }
+      if (H) S.get('Hips').getWorldPosition(H.v).sub(H.s0).multiplyScalar(H.k).add(H.t0).applyMatrix4(H.inv).toArray(hipsPos, f * 3);
     }
     act.stop();
     const tracks = order.map((n) => new THREE.QuaternionKeyframeTrack(`${T.get(n).name}.quaternion`, times, vals.get(n)));
+    if (H) tracks.push(new THREE.VectorKeyframeTrack(`${T.get('Hips').name}.position`, times, hipsPos));
     out.push(new THREE.AnimationClip(clip.name, clip.duration, tracks));
   }
   return out;

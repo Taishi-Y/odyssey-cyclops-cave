@@ -1,0 +1,648 @@
+{
+ "barks": {
+  "arrive": [
+   {
+    "f": "arrive_00_crewD.mp3",
+    "v": 3,
+    "t": "Hide! Anywhere! Just HIDE!"
+   },
+   {
+    "f": "arrive_01_crewC.mp3",
+    "v": 2,
+    "t": "Get down! GET DOWN!"
+   },
+   {
+    "f": "arrive_02_crewE.mp3",
+    "v": 4,
+    "t": "Hide! Anywhere! Just HIDE!"
+   },
+   {
+    "f": "arrive_03_mid.mp3",
+    "v": 7,
+    "t": "Something's coming... <breath> something HUGE!"
+   },
+   {
+    "f": "arrive_04_deep2.mp3",
+    "v": 0,
+    "t": "What IS that?! <gasp> The ground... it's shaking!"
+   },
+   {
+    "f": "arrive_05_crewE.mp3",
+    "v": 4,
+    "t": "What IS that?! <gasp> The ground... it's shaking!"
+   },
+   {
+    "f": "arrive_06_crewD.mp3",
+    "v": 3,
+    "t": "Gods help us... <gasp> gods help us!"
+   },
+   {
+    "f": "arrive_07_wiry.mp3",
+    "v": 8,
+    "t": "Gods help us... <gasp> gods help us!"
+   },
+   {
+    "f": "arrive_08_deep3.mp3",
+    "v": 1,
+    "t": "Oh no... oh no no no..."
+   },
+   {
+    "f": "arrive_09_deep2.mp3",
+    "v": 0,
+    "t": "Gods help us... <gasp> gods help us!"
+   },
+   {
+    "f": "arrive_10_deep3.mp3",
+    "v": 1,
+    "t": "Get down! GET DOWN!"
+   },
+   {
+    "f": "arrive_11_tenor.mp3",
+    "v": 6,
+    "t": "Something's coming... <breath> something HUGE!"
+   },
+   {
+    "f": "arrive_12_crewC.mp3",
+    "v": 2,
+    "t": "That's not an animal... <breath> that's NOT an animal!"
+   },
+   {
+    "f": "arrive_13_crewF.mp3",
+    "v": 5,
+    "t": "Did you hear that?! <gasp> Did you HEAR that?!"
+   }
+  ],
+  "sealed": [
+   {
+    "f": "sealed_00_deep2.mp3",
+    "v": 0,
+    "t": "No! NO! Let us OUT!!"
+   },
+   {
+    "f": "sealed_01_tenor.mp3",
+    "v": 6,
+    "t": "We'll never get out... <gasp> we'll never get OUT!"
+   },
+   {
+    "f": "sealed_02_wiry.mp3",
+    "v": 8,
+    "t": "We'll never get out... <gasp> we'll never get OUT!"
+   },
+   {
+    "f": "sealed_03_crewC.mp3",
+    "v": 2,
+    "t": "It's a tomb! <gasp> This is our TOMB!"
+   },
+   {
+    "f": "sealed_04_deep2.mp3",
+    "v": 0,
+    "t": "Push it! PUSH! <gasp> It won't move!!"
+   },
+   {
+    "f": "sealed_05_deep3.mp3",
+    "v": 1,
+    "t": "Gods... <breath> he's shut us in with him..."
+   },
+   {
+    "f": "sealed_06_deep3.mp3",
+    "v": 1,
+    "t": "We'll never get out... <gasp> we'll never get OUT!"
+   },
+   {
+    "f": "sealed_07_crewC.mp3",
+    "v": 2,
+    "t": "Gods... <breath> he's shut us in with him..."
+   },
+   {
+    "f": "sealed_08_crewD.mp3",
+    "v": 3,
+    "t": "Push it! PUSH! <gasp> It won't move!!"
+   },
+   {
+    "f": "sealed_09_crewE.mp3",
+    "v": 4,
+    "t": "The door! <gasp> He's blocking the DOOR!"
+   },
+   {
+    "f": "sealed_10_crewF.mp3",
+    "v": 5,
+    "t": "Push it! PUSH! <gasp> It won't move!!"
+   },
+   {
+    "f": "sealed_11_mid.mp3",
+    "v": 7,
+    "t": "Gods... <breath> he's shut us in with him..."
+   }
+  ],
+  "grab": [
+   {
+    "f": "grab_00_wiry.mp3",
+    "v": 8,
+    "t": "HELP ME!! HELP!! <gasp> ODYSSEUS!!"
+   },
+   {
+    "f": "grab_01_crewE.mp3",
+    "v": 4,
+    "t": "Mother!! <gasp> MOTHER!!"
+   },
+   {
+    "f": "grab_02_crewD.mp3",
+    "v": 3,
+    "t": "AAAH!! <gasp> GET IT OFF ME!!"
+   },
+   {
+    "f": "grab_03_crewC.mp3",
+    "v": 2,
+    "t": "HELP ME!! HELP!! <gasp> ODYSSEUS!!"
+   },
+   {
+    "f": "grab_04_deep3.mp3",
+    "v": 1,
+    "t": "Don't let him take me!! <gasp> DON'T LET HIM!!"
+   },
+   {
+    "f": "grab_05_crewC.mp3",
+    "v": 2,
+    "t": "I don't want to die!! <gasp> I DON'T WANT TO DIE!!"
+   },
+   {
+    "f": "grab_06_crewD.mp3",
+    "v": 3,
+    "t": "No no no NO!! PLEASE!! PLEASE!!"
+   },
+   {
+    "f": "grab_07_deep2.mp3",
+    "v": 0,
+    "t": "Mother!! <gasp> MOTHER!!"
+   },
+   {
+    "f": "grab_08_crewF.mp3",
+    "v": 5,
+    "t": "HELP ME!! HELP!! <gasp> ODYSSEUS!!"
+   },
+   {
+    "f": "grab_09_tenor.mp3",
+    "v": 6,
+    "t": "HELP ME!! HELP!! <gasp> ODYSSEUS!!"
+   },
+   {
+    "f": "grab_10_crewE.mp3",
+    "v": 4,
+    "t": "HELP ME!! HELP!! <gasp> ODYSSEUS!!"
+   },
+   {
+    "f": "grab_11_mid.mp3",
+    "v": 7,
+    "t": "I don't want to die!! <gasp> I DON'T WANT TO DIE!!"
+   },
+   {
+    "f": "grab_12_deep3.mp3",
+    "v": 1,
+    "t": "No no no NO!! PLEASE!! PLEASE!!"
+   },
+   {
+    "f": "grab_13_deep2.mp3",
+    "v": 0,
+    "t": "AAAH!! <gasp> GET IT OFF ME!!"
+   }
+  ],
+  "witness": [
+   {
+    "f": "witness_00_crewE.mp3",
+    "v": 4,
+    "t": "He's GOT him!! <gasp> He's got him!!"
+   },
+   {
+    "f": "witness_01_crewF.mp3",
+    "v": 5,
+    "t": "Let him GO!! <gasp> LET HIM GO, YOU MONSTER!!"
+   },
+   {
+    "f": "witness_02_deep3.mp3",
+    "v": 1,
+    "t": "Do something!! DO SOMETHING!!"
+   },
+   {
+    "f": "witness_03_crewE.mp3",
+    "v": 4,
+    "t": "Do something!! DO SOMETHING!!"
+   },
+   {
+    "f": "witness_04_crewF.mp3",
+    "v": 5,
+    "t": "Kill it!! KILL IT!!"
+   },
+   {
+    "f": "witness_05_crewD.mp3",
+    "v": 3,
+    "t": "Don't look! <gasp> Don't LOOK!"
+   },
+   {
+    "f": "witness_06_crewD.mp3",
+    "v": 3,
+    "t": "Do something!! DO SOMETHING!!"
+   },
+   {
+    "f": "witness_07_tenor.mp3",
+    "v": 6,
+    "t": "Grab his arm!! <gasp> PULL HIM DOWN!!"
+   },
+   {
+    "f": "witness_08_mid.mp3",
+    "v": 7,
+    "t": "Gods, NO!! NOT HIM!!"
+   },
+   {
+    "f": "witness_09_deep2.mp3",
+    "v": 0,
+    "t": "Don't look! <gasp> Don't LOOK!"
+   },
+   {
+    "f": "witness_10_tenor.mp3",
+    "v": 6,
+    "t": "Do something!! DO SOMETHING!!"
+   },
+   {
+    "f": "witness_11_deep2.mp3",
+    "v": 0,
+    "t": "Stab it! Stab its HAND!!"
+   },
+   {
+    "f": "witness_12_wiry.mp3",
+    "v": 8,
+    "t": "Do something!! DO SOMETHING!!"
+   },
+   {
+    "f": "witness_13_crewC.mp3",
+    "v": 2,
+    "t": "Don't look! <gasp> Don't LOOK!"
+   },
+   {
+    "f": "witness_14_crewC.mp3",
+    "v": 2,
+    "t": "Kill it!! KILL IT!!"
+   },
+   {
+    "f": "witness_15_deep3.mp3",
+    "v": 1,
+    "t": "Let him GO!! <gasp> LET HIM GO, YOU MONSTER!!"
+   }
+  ],
+  "eaten": [
+   {
+    "f": "eaten_00_crewD.mp3",
+    "v": 3,
+    "t": "No... <breath> no... gods have mercy..."
+   },
+   {
+    "f": "eaten_01_deep3.mp3",
+    "v": 1,
+    "t": "He was right there... <breath> he was RIGHT THERE..."
+   },
+   {
+    "f": "eaten_02_tenor.mp3",
+    "v": 6,
+    "t": "No... <breath> no... gods have mercy..."
+   },
+   {
+    "f": "eaten_03_mid.mp3",
+    "v": 7,
+    "t": "No... <breath> no... gods have mercy..."
+   },
+   {
+    "f": "eaten_04_crewC.mp3",
+    "v": 2,
+    "t": "No... <breath> no... gods have mercy..."
+   },
+   {
+    "f": "eaten_05_deep2.mp3",
+    "v": 0,
+    "t": "I heard his bones... <gasp> I heard his BONES..."
+   },
+   {
+    "f": "eaten_06_crewF.mp3",
+    "v": 5,
+    "t": "He ate him... <gasp> he ATE him..."
+   },
+   {
+    "f": "eaten_07_crewE.mp3",
+    "v": 4,
+    "t": "I heard his bones... <gasp> I heard his BONES..."
+   },
+   {
+    "f": "eaten_08_deep3.mp3",
+    "v": 1,
+    "t": "Zeus, protect us... <gasp> please..."
+   },
+   {
+    "f": "eaten_09_deep2.mp3",
+    "v": 0,
+    "t": "Zeus, protect us... <gasp> please..."
+   },
+   {
+    "f": "eaten_10_wiry.mp3",
+    "v": 8,
+    "t": "He ate him... <gasp> he ATE him..."
+   },
+   {
+    "f": "eaten_11_crewC.mp3",
+    "v": 2,
+    "t": "I heard his bones... <gasp> I heard his BONES..."
+   }
+  ],
+  "dropped": [
+   {
+    "f": "dropped_00_deep3.mp3",
+    "v": 1,
+    "t": "He's alive!! <gasp> Grab him, GRAB HIM!!"
+   },
+   {
+    "f": "dropped_01_tenor.mp3",
+    "v": 6,
+    "t": "Get UP!! <gasp> Get up and RUN!!"
+   },
+   {
+    "f": "dropped_02_crewE.mp3",
+    "v": 4,
+    "t": "Move!! MOVE!! GO GO GO!!"
+   },
+   {
+    "f": "dropped_03_wiry.mp3",
+    "v": 8,
+    "t": "He's alive!! <gasp> Grab him, GRAB HIM!!"
+   },
+   {
+    "f": "dropped_04_crewC.mp3",
+    "v": 2,
+    "t": "He dropped him!! <breath> RUN!! RUN!!"
+   },
+   {
+    "f": "dropped_05_crewF.mp3",
+    "v": 5,
+    "t": "Get UP!! <gasp> Get up and RUN!!"
+   },
+   {
+    "f": "dropped_06_deep2.mp3",
+    "v": 0,
+    "t": "This way!! <gasp> THIS WAY!!"
+   },
+   {
+    "f": "dropped_07_deep2.mp3",
+    "v": 0,
+    "t": "Get UP!! <gasp> Get up and RUN!!"
+   },
+   {
+    "f": "dropped_08_mid.mp3",
+    "v": 7,
+    "t": "Move!! MOVE!! GO GO GO!!"
+   },
+   {
+    "f": "dropped_09_crewD.mp3",
+    "v": 3,
+    "t": "This way!! <gasp> THIS WAY!!"
+   }
+  ],
+  "spotted": [
+   {
+    "f": "spotted_00_mid.mp3",
+    "v": 7,
+    "t": "LOOK OUT!! <gasp> BEHIND YOU!!"
+   },
+   {
+    "f": "spotted_01_tenor.mp3",
+    "v": 6,
+    "t": "Not me!! <gasp> Not ME!!"
+   },
+   {
+    "f": "spotted_02_crewE.mp3",
+    "v": 4,
+    "t": "LOOK OUT!! <gasp> BEHIND YOU!!"
+   },
+   {
+    "f": "spotted_03_crewE.mp3",
+    "v": 4,
+    "t": "Not me!! <gasp> Not ME!!"
+   },
+   {
+    "f": "spotted_04_crewF.mp3",
+    "v": 5,
+    "t": "Scatter!! SCATTER!!"
+   },
+   {
+    "f": "spotted_05_deep2.mp3",
+    "v": 0,
+    "t": "Scatter!! SCATTER!!"
+   },
+   {
+    "f": "spotted_06_crewD.mp3",
+    "v": 3,
+    "t": "RUN!! <gasp> RUN FOR YOUR LIVES!!"
+   },
+   {
+    "f": "spotted_07_crewC.mp3",
+    "v": 2,
+    "t": "He's looking at us!! <gasp> He's LOOKING at us!!"
+   },
+   {
+    "f": "spotted_08_wiry.mp3",
+    "v": 8,
+    "t": "He's looking at us!! <gasp> He's LOOKING at us!!"
+   },
+   {
+    "f": "spotted_09_deep3.mp3",
+    "v": 1,
+    "t": "Not me!! <gasp> Not ME!!"
+   },
+   {
+    "f": "spotted_10_deep3.mp3",
+    "v": 1,
+    "t": "He's SEEN us!! <gasp> He's coming!!"
+   },
+   {
+    "f": "spotted_11_crewC.mp3",
+    "v": 2,
+    "t": "He's coming!! AIM FOR THE EYE!!"
+   },
+   {
+    "f": "spotted_12_crewD.mp3",
+    "v": 3,
+    "t": "Scatter!! SCATTER!!"
+   },
+   {
+    "f": "spotted_13_deep2.mp3",
+    "v": 0,
+    "t": "He's SEEN us!! <gasp> He's coming!!"
+   }
+  ],
+  "waking": [
+   {
+    "f": "waking_00_deep3.mp3",
+    "v": 1,
+    "t": "He's moving... <gasp> he's MOVING!!"
+   },
+   {
+    "f": "waking_01_crewC.mp3",
+    "v": 2,
+    "t": "His eye... <gasp> his eye is OPEN!"
+   },
+   {
+    "f": "waking_02_crewD.mp3",
+    "v": 3,
+    "t": "No... no no no... <gasp> he's waking up!!"
+   },
+   {
+    "f": "waking_03_crewF.mp3",
+    "v": 5,
+    "t": "He's moving... <gasp> he's MOVING!!"
+   },
+   {
+    "f": "waking_04_crewE.mp3",
+    "v": 4,
+    "t": "He's moving... <gasp> he's MOVING!!"
+   },
+   {
+    "f": "waking_05_deep2.mp3",
+    "v": 0,
+    "t": "His eye... <gasp> his eye is OPEN!"
+   },
+   {
+    "f": "waking_06_tenor.mp3",
+    "v": 6,
+    "t": "Quiet!! <breath> He's WAKING!!"
+   },
+   {
+    "f": "waking_07_mid.mp3",
+    "v": 7,
+    "t": "Quiet!! <breath> He's WAKING!!"
+   },
+   {
+    "f": "waking_08_deep2.mp3",
+    "v": 0,
+    "t": "Shh! SHH! <gasp> Nobody breathe!"
+   },
+   {
+    "f": "waking_09_wiry.mp3",
+    "v": 8,
+    "t": "Shh! SHH! <gasp> Nobody breathe!"
+   }
+  ],
+  "blind": [
+   {
+    "f": "blind_00_crewE.mp3",
+    "v": 4,
+    "t": "His hands!! <gasp> WATCH HIS HANDS!!"
+   },
+   {
+    "f": "blind_01_wiry.mp3",
+    "v": 8,
+    "t": "We did it... <gasp> gods, we DID it!"
+   },
+   {
+    "f": "blind_02_deep2.mp3",
+    "v": 0,
+    "t": "He's blind!! <gasp> Stay LOW!! Don't make a sound!!"
+   },
+   {
+    "f": "blind_03_deep2.mp3",
+    "v": 0,
+    "t": "His hands!! <gasp> WATCH HIS HANDS!!"
+   },
+   {
+    "f": "blind_04_crewC.mp3",
+    "v": 2,
+    "t": "We did it... <gasp> gods, we DID it!"
+   },
+   {
+    "f": "blind_05_crewF.mp3",
+    "v": 5,
+    "t": "We did it... <gasp> gods, we DID it!"
+   },
+   {
+    "f": "blind_06_mid.mp3",
+    "v": 7,
+    "t": "He's gone mad!! <breath> Get back!! GET BACK!!"
+   },
+   {
+    "f": "blind_07_deep3.mp3",
+    "v": 1,
+    "t": "He's gone mad!! <breath> Get back!! GET BACK!!"
+   },
+   {
+    "f": "blind_08_tenor.mp3",
+    "v": 6,
+    "t": "He's feeling for us... <breath> don't move... DON'T MOVE..."
+   },
+   {
+    "f": "blind_09_crewD.mp3",
+    "v": 3,
+    "t": "He's blind!! <gasp> Stay LOW!! Don't make a sound!!"
+   }
+  ]
+ },
+ "lines": {
+  "We followed the sheep and found this… There are bags of cheese hanging on the walls": {
+   "f": "line_00_tenor.mp3",
+   "v": 6
+  },
+  "Food. Take as much as we can carry back to the ships": {
+   "f": "line_01_crewC.mp3",
+   "v": 2
+  },
+  "…The ground is shaking": {
+   "f": "line_02_crewD.mp3",
+   "v": 3
+  },
+  "Hide!": {
+   "f": "line_03_odysseus.mp3",
+   "v": -1
+  },
+  "The entrance… he's sealed it with a rock": {
+   "f": "line_04_crewC.mp3",
+   "v": 2
+  },
+  "That eye… he only has the one. Aim for it": {
+   "f": "line_05_odysseus.mp3",
+   "v": -1
+  },
+  "He's asleep… it's now or never": {
+   "f": "line_06_crewC.mp3",
+   "v": 2
+  },
+  "It's done! Now he'll guard the door… our only way out is with the sheep": {
+   "f": "line_07_odysseus.mp3",
+   "v": -1
+  },
+  "He's feeling every sheep as it passes… straw on your back. Go on all fours": {
+   "f": "line_08_crewC.mp3",
+   "v": 2
+  },
+  "It can talk. Why didn't it talk before?": {
+   "f": "line_09_tenor.mp3",
+   "v": 6
+  },
+  "Do you talk to ants?": {
+   "f": "line_10_odysseus.mp3",
+   "v": -1
+  },
+  "Hit the eye! Get away while you can": {
+   "f": "line_11_odysseus.mp3",
+   "v": -1
+  },
+  "Heavy… but sharpened and hardened in the fire…": {
+   "f": "line_12_odysseus.mp3",
+   "v": -1
+  },
+  "The tip is glowing red. Now": {
+   "f": "line_13_odysseus.mp3",
+   "v": -1
+  },
+  "Straw tied on. Crouched, I should pass for a sheep… I hope": {
+   "f": "line_14_odysseus.mp3",
+   "v": -1
+  },
+  "Wait for the moment…": {
+   "f": "line_15_odysseus.mp3",
+   "v": -1
+  }
+ }
+}

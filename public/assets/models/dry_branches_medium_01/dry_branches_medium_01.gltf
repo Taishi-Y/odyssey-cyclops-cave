@@ -1,149 +1,37 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v3.2.43",
+    "generator": "glTF-Transform v4.5.0",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
-    {
-      "name": "Scene",
-      "nodes": [
-        0,
-        1,
-        2
-      ]
-    }
-  ],
-  "nodes": [
-    {
-      "mesh": 0,
-      "name": "dry_branches_medium_01_c",
-      "translation": [
-        0.45012858510017395,
-        0.04933696985244751,
-        -0.05088076367974281
-      ]
-    },
-    {
-      "mesh": 1,
-      "name": "dry_branches_medium_01_b",
-      "translation": [
-        0.017346084117889404,
-        0.06085515022277832,
-        -0.06261161714792252
-      ]
-    },
-    {
-      "mesh": 2,
-      "name": "dry_branches_medium_01_a",
-      "translation": [
-        -0.410437673330307,
-        0.1236923336982727,
-        -0.05545513331890106
-      ]
-    }
-  ],
-  "materials": [
-    {
-      "doubleSided": true,
-      "name": "dry_branches_medium_01",
-      "normalTexture": {
-        "index": 0
-      },
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 1
-        },
-        "metallicFactor": 0,
-        "metallicRoughnessTexture": {
-          "index": 2
-        }
-      }
-    }
-  ],
-  "meshes": [
-    {
-      "name": "branches_b_dynamesh.001",
-      "primitives": [
-        {
-          "attributes": {
-            "POSITION": 0,
-            "NORMAL": 1,
-            "TEXCOORD_0": 2
-          },
-          "indices": 3,
-          "material": 0
-        }
-      ]
-    },
-    {
-      "name": "branches_b_dynamesh.002",
-      "primitives": [
-        {
-          "attributes": {
-            "POSITION": 4,
-            "NORMAL": 5,
-            "TEXCOORD_0": 6
-          },
-          "indices": 7,
-          "material": 0
-        }
-      ]
-    },
-    {
-      "name": "branches_b_dynamesh.003",
-      "primitives": [
-        {
-          "attributes": {
-            "POSITION": 8,
-            "NORMAL": 9,
-            "TEXCOORD_0": 10
-          },
-          "indices": 11,
-          "material": 0
-        }
-      ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
-    }
-  ],
-  "images": [
-    {
-      "mimeType": "image/jpeg",
-      "name": "dry_branches_medium_01_nor_gl",
-      "uri": "textures/dry_branches_medium_01_nor_gl_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "dry_branches_medium_01_diff",
-      "uri": "textures/dry_branches_medium_01_diff_1k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "dry_branches_medium_01_rough",
-      "uri": "textures/dry_branches_medium_01_arm_1k.jpg"
-    }
-  ],
   "accessors": [
     {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 9024,
       "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 8436,
+      "bufferView": 0,
+      "byteOffset": 18048
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 9531,
+      "bufferView": 0,
+      "byteOffset": 34920
+    },
+    {
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 3641,
+      "count": 2246,
       "max": [
         0.06191990152001381,
-        0.08930298686027527,
+        0.08884792029857635,
         0.37239524722099304
       ],
       "min": [
@@ -151,30 +39,27 @@
         -0.053956836462020874,
         -0.4047306180000305
       ],
-      "type": "VEC3"
-    },
-    {
       "bufferView": 1,
-      "componentType": 5126,
-      "count": 3641,
-      "type": "VEC3"
+      "byteOffset": 0
     },
     {
-      "bufferView": 2,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 3641,
-      "type": "VEC2"
+      "count": 2246,
+      "bufferView": 1,
+      "byteOffset": 12
     },
     {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 16848,
-      "type": "SCALAR"
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 2246,
+      "bufferView": 1,
+      "byteOffset": 24
     },
     {
-      "bufferView": 4,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 3493,
+      "count": 2183,
       "max": [
         0.09121467918157578,
         0.07924063503742218,
@@ -185,30 +70,27 @@
         -0.0626467615365982,
         -0.45445898175239563
       ],
-      "type": "VEC3"
+      "bufferView": 2,
+      "byteOffset": 0
     },
     {
-      "bufferView": 5,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 3493,
-      "type": "VEC3"
+      "count": 2183,
+      "bufferView": 2,
+      "byteOffset": 12
     },
     {
-      "bufferView": 6,
+      "type": "VEC2",
       "componentType": 5126,
-      "count": 3493,
-      "type": "VEC2"
+      "count": 2183,
+      "bufferView": 2,
+      "byteOffset": 24
     },
     {
-      "bufferView": 7,
-      "componentType": 5123,
-      "count": 15762,
-      "type": "SCALAR"
-    },
-    {
-      "bufferView": 8,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 4252,
+      "count": 2774,
       "max": [
         0.18606369197368622,
         0.20076525211334229,
@@ -219,99 +101,201 @@
         -0.1402200609445572,
         -0.6343755125999451
       ],
-      "type": "VEC3"
+      "bufferView": 3,
+      "byteOffset": 0
     },
     {
-      "bufferView": 9,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 4252,
-      "type": "VEC3"
+      "count": 2774,
+      "bufferView": 3,
+      "byteOffset": 12
     },
     {
-      "bufferView": 10,
+      "type": "VEC2",
       "componentType": 5126,
-      "count": 4252,
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 11,
-      "componentType": 5123,
-      "count": 17799,
-      "type": "SCALAR"
+      "count": 2774,
+      "bufferView": 3,
+      "byteOffset": 24
     }
   ],
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 43692,
-      "byteOffset": 0
+      "byteOffset": 0,
+      "byteLength": 53984,
+      "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 43692,
-      "byteOffset": 43692
+      "byteOffset": 53984,
+      "byteLength": 71872,
+      "byteStride": 32,
+      "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 29128,
-      "byteOffset": 87384
+      "byteOffset": 125856,
+      "byteLength": 69856,
+      "byteStride": 32,
+      "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 33696,
-      "byteOffset": 116512
-    },
-    {
-      "buffer": 0,
-      "byteLength": 41916,
-      "byteOffset": 150208
-    },
-    {
-      "buffer": 0,
-      "byteLength": 41916,
-      "byteOffset": 192124
-    },
-    {
-      "buffer": 0,
-      "byteLength": 27944,
-      "byteOffset": 234040
-    },
-    {
-      "buffer": 0,
-      "byteLength": 31524,
-      "byteOffset": 261984
-    },
-    {
-      "buffer": 0,
-      "byteLength": 51024,
-      "byteOffset": 293508
-    },
-    {
-      "buffer": 0,
-      "byteLength": 51024,
-      "byteOffset": 344532
-    },
-    {
-      "buffer": 0,
-      "byteLength": 34016,
-      "byteOffset": 395556
-    },
-    {
-      "buffer": 0,
-      "byteLength": 35598,
-      "byteOffset": 429572
+      "byteOffset": 195712,
+      "byteLength": 88768,
+      "byteStride": 32,
+      "target": 34962
     }
   ],
   "samplers": [
     {
       "magFilter": 9729,
-      "minFilter": 9987
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "dry_branches_medium_01_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/dry_branches_medium_01_nor_gl_1k.jpg"
+    },
+    {
+      "name": "dry_branches_medium_01_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/dry_branches_medium_01_diff_1k.jpg"
+    },
+    {
+      "name": "dry_branches_medium_01_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/dry_branches_medium_01_arm_1k.jpg"
     }
   ],
   "buffers": [
     {
-      "byteLength": 465172,
-      "uri": "dry_branches_medium_01.bin"
+      "uri": "dry_branches_medium_01.bin",
+      "byteLength": 284480
     }
-  ]
+  ],
+  "materials": [
+    {
+      "name": "dry_branches_medium_01",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "branches_b_dynamesh.001",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 3,
+            "NORMAL": 4,
+            "TEXCOORD_0": 5
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    },
+    {
+      "name": "branches_b_dynamesh.002",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 6,
+            "NORMAL": 7,
+            "TEXCOORD_0": 8
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 1
+        }
+      ]
+    },
+    {
+      "name": "branches_b_dynamesh.003",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 9,
+            "NORMAL": 10,
+            "TEXCOORD_0": 11
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 2
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "dry_branches_medium_01_c",
+      "translation": [
+        0.45012858510017395,
+        0.04933696985244751,
+        -0.05088076367974281
+      ],
+      "mesh": 0
+    },
+    {
+      "name": "dry_branches_medium_01_b",
+      "translation": [
+        0.017346084117889404,
+        0.06085515022277832,
+        -0.06261161714792252
+      ],
+      "mesh": 1
+    },
+    {
+      "name": "dry_branches_medium_01_a",
+      "translation": [
+        -0.410437673330307,
+        0.1236923336982727,
+        -0.05545513331890106
+      ],
+      "mesh": 2
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "scene": 0
 }

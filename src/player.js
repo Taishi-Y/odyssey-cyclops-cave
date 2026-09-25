@@ -3,6 +3,7 @@ import { makeBronzeMaterial } from './materials.js';
 import { makeStraw } from './world.js';
 import { rockField } from './cave.js';
 import { mapBones, Poser, rotWorld } from './rig.js';
+import { LOCO_SPEED } from './characters.js';
 
 const woodMat = () => new THREE.MeshStandardMaterial({ color: 0x5a3d24, roughness: 0.7 });
 
@@ -31,11 +32,11 @@ function makeBow() {
 
 export function makeArrow() {
   const g = new THREE.Group();
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.75, 6), woodMat());
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.0065, 0.75, 6), woodMat());
   shaft.rotation.x = Math.PI / 2;
-  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.06, 4), makeBronzeMaterial());
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.07, 4), makeBronzeMaterial());
   tip.rotation.x = Math.PI / 2; tip.position.z = 0.4;
-  const fl = new THREE.Mesh(new THREE.BoxGeometry(0.002, 0.025, 0.1), new THREE.MeshStandardMaterial({ color: 0x2d2621, roughness: 1 }));
+  const fl = new THREE.Mesh(new THREE.BoxGeometry(0.002, 0.034, 0.12), new THREE.MeshStandardMaterial({ color: 0x2d2621, roughness: 1 }));
   fl.position.z = -0.32; const fl2 = fl.clone(); fl2.rotation.z = Math.PI / 2;
   g.add(shaft, tip, fl, fl2);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -139,7 +140,8 @@ export class Player {
     if (I.pressed('KeyX')) this.onSwitch?.();
     const run = I.down('ShiftLeft') && !this.crouch && !this.carrying && !this.exhausted && this.stamina > 0;
     this.sprinting = run;
-    let speed = this.prone ? 0.9 : this.crouch ? 1.5 : run ? 6.2 : 3.3;
+    // walk by default, Shift to run (mocap walk / jog / sprint clips follow the ground speed)
+    let speed = this.prone ? 0.9 : this.crouch ? (this.disguised ? 1.5 : 1.1) : run ? 6.2 : 1.6;
     if (this.carrying) speed *= 0.55;
     const f = (I.down('KeyW') ? 1 : 0) - (I.down('KeyS') ? 1 : 0);
     const s = (I.down('KeyD') ? 1 : 0) - (I.down('KeyA') ? 1 : 0);
@@ -150,6 +152,9 @@ export class Player {
     const accel = this.onGround ? 12 : 2;
     this.vel.x += (wish.x - this.vel.x) * Math.min(1, accel * dt);
     this.vel.z += (wish.z - this.vel.z) * Math.min(1, accel * dt);
+    // standing still on the ground: stop dead (no slow drift, no slope sliding)
+    const idle = wish.lengthSq() === 0 && this.onGround;
+    if (idle && Math.hypot(this.vel.x, this.vel.z) < 0.6) { this.vel.x = 0; this.vel.z = 0; }
     // ---- Zelda-style climbing: push into a steep rock face to climb it (uses stamina)
     const fwdDir = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
     const rockAt = (h, d, th = -0.3) => rockField(this.pos.x + fwdDir.x * d, this.pos.y + h, this.pos.z + fwdDir.z * d) > th;
@@ -184,6 +189,9 @@ export class Player {
       const h = this.prone ? 0.7 : this.crouch ? 1.1 : this.height;
       const r = this.physics.collideCapsule(this.pos, this.radius, h, this.vel);
       grounded = grounded || r.onGround;
+      // the slope push-out has a sideways part: ignore it while idle so the body does not creep downhill
+      // (a big push still goes through, e.g. something solid shoving you)
+      if (idle && !this.climbing && Math.hypot(this.pos.x - prev.x, this.pos.z - prev.z) < 0.05) { this.pos.x = prev.x; this.pos.z = prev.z; }
       // never let the head or body poke into the rock (the cave mesh is one-sided)
       const inRock = (y) => rockField(this.pos.x, this.pos.y + y, this.pos.z) > -0.25;
       if (inRock(h - 0.1) || inRock(h * 0.6)) {
@@ -193,6 +201,7 @@ export class Player {
       }
     }
     if (grounded && this.vel.y < 0) this.vel.y = 0;
+    if (grounded && idle) { this.vel.x = 0; this.vel.z = 0; }
     this.onGround = grounded;
     const hs = Math.hypot(this.vel.x, this.vel.z);
     // noise model
@@ -261,6 +270,7 @@ export class Player {
     const speed = 22 + power * 48;
     this.projectiles.push({ kind: 'arrow', mesh, pos: o.clone().addScaledVector(d, 0.6), vel: d.clone().multiplyScalar(speed), life: 8, dmg: 0.4 + power * 0.6 });
     this.audio.twang(power);
+    this.fovKick = 0.5 + power * 0.5; this.shake = Math.max(this.shake, 0.12 * power);
     this.releaseT = 0.3;
     this.noise = Math.max(this.noise, 0.45);
     this.recoil = 1;
@@ -373,10 +383,27 @@ export class Player {
     av.root.position.copy(this.pos);
     av.root.rotation.set(0, this.faceYaw, 0);
     // animation
-    const anim = this.dead ? 'idle' : this.climbing ? 'walk' : this.crouch ? (hs > 0.2 ? 'walk' : 'sneak_pose') : hs > 4.5 ? 'run' : hs > 0.25 ? 'walk' : 'idle';
-    av.play(anim, 0.25, anim === 'walk' ? Math.max(0.5, hs / (this.crouch ? 2.2 : 1.6)) : anim === 'run' ? hs / 6 : 1);
+    this._airT = this.onGround || this.climbing ? 0 : (this._airT || 0) + dt;
+    const mocap = !!av.actions.m_walk, lowPose = this.prone || this.disguised;
+    let anim;
+    if (this.dead) anim = 'idle';
+    else if (this.climbing) anim = 'walk';
+    else if (mocap && this._airT > 0.12) anim = 'm_jump';
+    else if (this.crouch && (lowPose || !mocap)) anim = hs > 0.2 ? 'walk' : 'sneak_pose';
+    else if (!mocap) anim = hs > 4.5 ? 'run' : hs > 0.25 ? 'walk' : 'idle';
+    else if (this.crouch) anim = hs > 0.2 ? 'm_crouch' : 'm_crouch_idle';
+    else anim = hs > 5 ? 'm_sprint' : hs > 2.3 ? 'm_jog' : hs > 0.25 ? 'm_walk' : 'm_idle';
+    const ls = LOCO_SPEED[anim];
+    av.play(anim, anim === 'm_jump' ? 0.15 : 0.25, ls ? Math.max(0.55, hs / ls) : anim === 'walk' ? Math.max(0.5, hs / (this.crouch ? 2.2 : 1.6)) : anim === 'run' ? hs / 6 : 1);
     av.mixer.update(dt);
-    const low = this.prone ? 0.32 : this.crouch ? (this.disguised ? 0.55 : 0.72) : 1;
+    // footsteps (foley reads this.bob) land on the animation's heel strikes: both halves of each m_* loop start on one
+    if (ls && av.current) {
+      const p = av.current.time / av.current.getClip().duration;
+      let dp = p - (this._animP ?? p); if (dp < 0) dp += 1;
+      this.bob = (this._bobA ?? this.bob) + dp * Math.PI * 2;
+      this._animP = p; this._bobA = this.bob;
+    } else { this._animP = undefined; this._bobA = undefined; }
+    const low = this.prone ? 0.32 : this.crouch ? (this.disguised ? 0.55 : mocap ? 1 : 0.72) : 1;
     this._low = THREE.MathUtils.lerp(this._low ?? 1, low, Math.min(1, dt * 8));
     av.root.scale.set(1, this._low, 1);
     av.root.updateMatrixWorld(true);
@@ -482,7 +509,10 @@ export class Player {
     this.camera.rotation.x = this.pitch + sy + sway + this.recoil * 0.02;
     this.camera.rotation.z = Math.sin(this.bob) * 0.004 * bobAmt;
     this.recoil = Math.max(0, this.recoil - dt * 5);
-    this.camera.fov = THREE.MathUtils.lerp(64, 44, this.aim);
+    // drawing the bow = focusing: the view tightens with the pull (eased), screen edges blur (game.js)
+    const focusT = !this.carrying && !this.dead && this.weapon === 'bow' && this.drawing ? THREE.MathUtils.smoothstep(this.draw, 0, 1) : 0;
+    this.focus = THREE.MathUtils.lerp(this.focus || 0, focusT, Math.min(1, dt * (focusT > (this.focus || 0) ? 6 : 10)));
+    this.camera.fov = THREE.MathUtils.lerp(64, 44, this.aim) - this.focus * 10;
     this.camera.updateProjectionMatrix();
     // view model animation
     const d = this.draw;
@@ -506,8 +536,9 @@ export class Player {
       const back = new THREE.Vector3(0, 0, 1).applyQuaternion(qc), right = new THREE.Vector3(1, 0, 0).applyQuaternion(qc);
       const pivot = this.pos.clone().add(new THREE.Vector3(0, (this.prone ? 0.6 : this.crouch ? 1.05 : 1.62) + by * 0.5, 0));
       for (let k = 0; k < 8 && rockField(pivot.x, pivot.y, pivot.z) > -0.3; k++) pivot.y -= 0.12;
-      const dist = THREE.MathUtils.lerp(3.1, 1.35, this.aim);
-      const side = THREE.MathUtils.lerp(0.42, 0.6, this.aim);
+      const ak = Math.max(this.aim, this.focus * 0.75);   // drawing also pulls the camera in over the shoulder
+      const dist = THREE.MathUtils.lerp(3.1, 1.35, ak);
+      const side = THREE.MathUtils.lerp(0.42, 0.6, ak);
       const desired = pivot.clone().addScaledVector(right, side).addScaledVector(back, dist).add(new THREE.Vector3(0, 0.15, 0));
       // march from the character toward the desired camera spot and stop before any rock
       // (uses the exact density field the cave was meshed from, plus the boulder/props via BVH)
@@ -528,7 +559,9 @@ export class Player {
       this.avatar.root.visible = this.avatar.root.visible && this._cam.distanceTo(pivot) > 0.55;
       this.camera.quaternion.copy(qc);
       this._sprintFov = THREE.MathUtils.lerp(this._sprintFov || 0, this.sprinting && (this.moving || 0) > 4 ? 7 : 0, Math.min(1, dt * 4));
-      this.camera.fov = THREE.MathUtils.lerp(62 + this._sprintFov, 48, this.aim);
+      this.fovKick = Math.max(0, (this.fovKick || 0) - dt * 4);
+      // tighten a little while the bow is drawn, punch out on release
+      this.camera.fov = THREE.MathUtils.lerp(62 + this._sprintFov, 48, this.aim) - this.focus * 12 + this.fovKick * 7;
       this.camera.updateProjectionMatrix();
     }
   }

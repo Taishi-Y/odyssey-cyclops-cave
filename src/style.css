@@ -153,3 +153,54 @@ body.photo #hud, body.photo #touch { display: none; }
 body.touch #photo { width: 200px; font-size: 11px; padding: 10px; right: 10px; top: 10px; }
 #t-photo { right: 228px; top: 24px; }
 body:not(.playing) #radar { display: none; }
+/* bow readability: full draw glows, release pulses outward */
+#crosshair.full .ring { border-color: #ffb347 !important; box-shadow: 0 0 10px #ff8a00, inset 0 0 6px #ff8a00; animation: fullpulse 0.5s ease-in-out infinite alternate; }
+@keyframes fullpulse { from { transform: scale(1); } to { transform: scale(1.18); } }
+#crosshair .ring { position: relative; }
+#crosshair.release .ring::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -9px; border-radius: 50%; border: 2px solid rgba(255, 220, 160, 0.95); animation: release 0.35s ease-out forwards; }
+@keyframes release { from { transform: scale(0.6); opacity: 1; } to { transform: scale(4); opacity: 0; } }
+/* aim is on the giant: body tints red, head amber, the eye locks on */
+#crosshair.onbody .ring { border-color: rgba(255, 120, 100, 0.95) !important; }
+#crosshair.head .ring { border-color: #ffb347 !important; box-shadow: 0 0 8px rgba(255, 140, 0, 0.8); }
+#crosshair.weak .ring { width: 20px !important; height: 20px !important; border: 2px solid #ff3a2a !important; box-shadow: 0 0 12px #ff2a10, inset 0 0 8px #ff2a10; animation: lockon 0.35s ease-in-out infinite alternate; }
+@keyframes lockon { from { transform: scale(0.85); } to { transform: scale(1.1); } }
+#crosshair.weak::after { background: #ff5040; }
+/* eye lock-on mark: a red diamond closes in around the reticle */
+#crosshair.weak::before { content: ''; position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -16px; border: 2px solid #ff3a2a; box-shadow: 0 0 10px #ff2a10; animation: lockmark 0.25s ease-out forwards, lockspin 1.2s 0.25s linear infinite; }
+@keyframes lockmark { from { transform: rotate(45deg) scale(2.2); opacity: 0; } to { transform: rotate(45deg) scale(1); opacity: 1; } }
+@keyframes lockspin { 0%, 100% { transform: rotate(45deg) scale(1); } 50% { transform: rotate(45deg) scale(1.12); } }
+
+/* help screen */
+#howto { margin-top: 12px; background: transparent; color: #b89a6a; border: none; font: 13px -apple-system, sans-serif; letter-spacing: 0.25em; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+#howto:hover { color: #e8dcc6; }
+#help { position: fixed; inset: 0; z-index: 9; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+#help.on { display: flex; }
+#help .panel { width: min(760px, 94vw); max-height: 88vh; display: flex; flex-direction: column; background: rgba(14,10,7,0.94); border: 1px solid rgba(232,220,198,0.25); color: #e8dcc6; font: 13px/1.5 -apple-system, 'Hiragino Sans', sans-serif; }
+#help .head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; }
+#help .title { font: 300 22px 'Cormorant Garamond', serif; letter-spacing: 0.4em; }
+#help .close { background: none; border: none; color: #e8dcc6; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+#help .tabs { display: flex; gap: 4px; padding: 0 18px; border-bottom: 1px solid rgba(232,220,198,0.15); }
+#help .tabs button { background: none; border: none; border-bottom: 2px solid transparent; color: #9a8c78; font: 700 12px -apple-system, sans-serif; letter-spacing: 0.2em; padding: 8px 12px; cursor: pointer; }
+#help .tabs button.on { color: #ffcf8a; border-bottom-color: #ffae5a; }
+#help .page { display: none; overflow-y: auto; padding: 10px 18px 4px; -webkit-overflow-scrolling: touch; }
+#help .page.on { display: block; }
+#help table { width: 100%; border-collapse: collapse; }
+#help tr { border-bottom: 1px solid rgba(232,220,198,0.08); }
+#help tr.cols td { color: #b89a6a; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; }
+#help th { text-align: left; font-weight: 600; color: #ffcf8a; padding: 6px 12px 6px 0; width: 32%; vertical-align: top; }
+#help td { padding: 6px 12px 6px 0; vertical-align: top; }
+#help td.where { color: #9a8c78; white-space: nowrap; }
+#help td.tc { color: #9a8c78; }
+#help .foot { padding: 8px 18px 12px; font-size: 11px; color: #7a6c58; }
+body:not(.touch) #help td.tc { display: none; }
+body.touch #help td.tc { display: table-cell; }
+body.touch #help .foot { display: none; }
+#t-help { right: 296px; top: 24px; font-size: 16px; }
+body:not(.playing) #t-help { display: none; }
+body.touch #help td.kc { display: none; }
+
+/* hit on the giant: red edge pulse */
+#hitflash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(170,0,0,0.55) 100%); }
+#hitflash.on { animation: hitflash 0.45s ease-out; }
+#hitflash.crit { animation: hitflash 0.9s ease-out; background: radial-gradient(ellipse at center, rgba(255,40,0,0.12) 20%, rgba(200,0,0,0.75) 100%); }
+@keyframes hitflash { 0% { opacity: 1; } 100% { opacity: 0; } }

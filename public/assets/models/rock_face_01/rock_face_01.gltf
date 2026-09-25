@@ -1,93 +1,20 @@
 {
   "asset": {
-    "generator": "Khronos glTF Blender I/O v4.0.44",
+    "generator": "glTF-Transform v4.5.0",
     "version": "2.0"
   },
-  "scene": 0,
-  "scenes": [
-    {
-      "name": "Scene",
-      "nodes": [
-        0
-      ]
-    }
-  ],
-  "nodes": [
-    {
-      "mesh": 0,
-      "name": "rock_face_01"
-    }
-  ],
-  "materials": [
-    {
-      "doubleSided": true,
-      "name": "rock_face_01",
-      "normalTexture": {
-        "index": 0
-      },
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 1
-        },
-        "metallicFactor": 0,
-        "metallicRoughnessTexture": {
-          "index": 2
-        }
-      }
-    }
-  ],
-  "meshes": [
-    {
-      "name": "rock_face_section_1_proxy",
-      "primitives": [
-        {
-          "attributes": {
-            "POSITION": 0,
-            "NORMAL": 1,
-            "TEXCOORD_0": 2
-          },
-          "indices": 3,
-          "material": 0
-        }
-      ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
-    },
-    {
-      "sampler": 0,
-      "source": 1
-    },
-    {
-      "sampler": 0,
-      "source": 2
-    }
-  ],
-  "images": [
-    {
-      "mimeType": "image/jpeg",
-      "name": "rock_face_01_nor_gl",
-      "uri": "textures/rock_face_01_nor_gl_2k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "rock_face_01_diff",
-      "uri": "textures/rock_face_01_diff_2k.jpg"
-    },
-    {
-      "mimeType": "image/jpeg",
-      "name": "rock_face_01_rough",
-      "uri": "textures/rock_face_01_arm_2k.jpg"
-    }
-  ],
   "accessors": [
     {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 27000,
       "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 11106,
+      "count": 5110,
       "max": [
         2.8199098110198975,
         3.5296897888183594,
@@ -98,63 +25,132 @@
         -0.03435921296477318,
         -3.466048240661621
       ],
-      "type": "VEC3"
-    },
-    {
       "bufferView": 1,
-      "componentType": 5126,
-      "count": 11106,
-      "type": "VEC3"
+      "byteOffset": 0
     },
     {
-      "bufferView": 2,
+      "type": "VEC3",
       "componentType": 5126,
-      "count": 11106,
-      "type": "VEC2"
+      "count": 5110,
+      "bufferView": 1,
+      "byteOffset": 12
     },
     {
-      "bufferView": 3,
-      "componentType": 5123,
-      "count": 60522,
-      "type": "SCALAR"
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 5110,
+      "bufferView": 1,
+      "byteOffset": 24
     }
   ],
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 133272,
       "byteOffset": 0,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 133272,
-      "byteOffset": 133272,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 88848,
-      "byteOffset": 266544,
-      "target": 34962
-    },
-    {
-      "buffer": 0,
-      "byteLength": 121044,
-      "byteOffset": 355392,
+      "byteLength": 54000,
       "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 54000,
+      "byteLength": 163520,
+      "byteStride": 32,
+      "target": 34962
     }
   ],
   "samplers": [
     {
       "magFilter": 9729,
-      "minFilter": 9987
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "rock_face_01_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/rock_face_01_nor_gl_2k.jpg"
+    },
+    {
+      "name": "rock_face_01_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/rock_face_01_diff_2k.jpg"
+    },
+    {
+      "name": "rock_face_01_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/rock_face_01_arm_2k.jpg"
     }
   ],
   "buffers": [
     {
-      "byteLength": 476436,
-      "uri": "rock_face_01.bin"
+      "uri": "rock_face_01.bin",
+      "byteLength": 217520
     }
-  ]
+  ],
+  "materials": [
+    {
+      "name": "rock_face_01",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "rock_face_section_1_proxy",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "rock_face_01",
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0
 }

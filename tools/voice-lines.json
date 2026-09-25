@@ -1,0 +1,72 @@
+{
+  "characters": {
+    "Odysseus": {
+      "voice": "Alnilam",
+      "style": "Odysseus, a hardened Greek captain in his forties, low and commanding, trying to keep his men calm"
+    },
+    "Eurylochus": {
+      "voice": "Algenib",
+      "style": "Eurylochus, a gruff veteran sailor with a gravelly voice"
+    },
+    "Polites": {
+      "voice": "Puck",
+      "style": "Polites, a young sailor barely twenty, nervous and earnest"
+    },
+    "Perimedes": {
+      "voice": "Enceladus",
+      "style": "Perimedes, a wiry sailor with a breathy voice"
+    },
+    "Crew": {
+      "voice": "Sadachbia",
+      "style": "an anonymous young Greek sailor"
+    },
+    "Polyphemus": {
+      "voice": "Charon",
+      "style": "Polyphemus, an enormous one-eyed giant with a slow, cavernous, rumbling voice"
+    }
+  },
+  "lines": [
+    {
+      "id": "perimedes_shaking",
+      "who": "Perimedes",
+      "text": "<breath> ...The ground is shaking.",
+      "direction": "whispered, frozen with dread, as the footsteps of something huge approach"
+    },
+    {
+      "id": "odysseus_hide",
+      "who": "Odysseus",
+      "text": "HIDE!! Hide, NOW!!",
+      "direction": "a loud, sharp shouted command to his men across the cave, full of alarm. Absolutely not whispering."
+    },
+    {
+      "id": "eurylochus_sealed",
+      "who": "Eurylochus",
+      "text": "The entrance... <gasp> he's sealed it with a rock.",
+      "direction": "horror dawning, breath catching, voice starting to shake"
+    },
+    {
+      "id": "crew_coming",
+      "who": "Crew",
+      "text": "<gasp> He's COMING!! AIM FOR THE EYE!!",
+      "direction": "SCREAMING at full volume to warn the others across a huge cave, panicked, voice cracking. Absolutely not whispering."
+    },
+    {
+      "id": "crew_waking",
+      "who": "Crew",
+      "text": "No, no, no... he's waking up!",
+      "direction": "rising panic, frantic whisper that breaks into a cry"
+    },
+    {
+      "id": "crew_dropped",
+      "who": "Crew",
+      "text": "He dropped him!! <breath> RUN!! RUN!!",
+      "direction": "yelling at the top of his lungs in sheer terror, out of breath from sprinting. Absolutely not whispering."
+    },
+    {
+      "id": "polyphemus_blinded",
+      "who": "Polyphemus",
+      "text": "Father Poseidon... <long pause> they blinded me...",
+      "direction": "agonized, sobbing with rage, a wounded monster"
+    }
+  ]
+}

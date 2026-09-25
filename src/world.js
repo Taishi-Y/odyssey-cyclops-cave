@@ -3,7 +3,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { buildCave, LAYOUT, floorHeightAt } from './cave.js';
 import { makeRockMaterial } from './materials.js';
 import { Fire } from './fire.js';
-import { rng } from './noise.js';
+import { rng, fbm3, noise3 } from './noise.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const gltf = new GLTFLoader();
 const loadModel = (name) => new Promise((res, rej) => gltf.load(`assets/models/${name}/${name}.gltf`, (g) => res(g.scene), undefined, rej));
@@ -55,6 +56,48 @@ function makeShaft(from, to, r0, r1, color, strength) {
   mesh.renderOrder = 3;
   mesh.frustumCulled = false;
   return mesh;
+}
+
+// Door slab: a tall, slightly skewed trapezoid of rock, ~1.7 m thick, with chipped edges and a lumpy face.
+// Origin at the bottom centre; +z faces out of the cave.
+function makeDoorSlab() {
+  const H = 12.6, T = 1.7, bev = 0.55;
+  const g = new THREE.BoxGeometry(1, 1, 1, 28, 40, 6);
+  const pos = g.attributes.position;
+  // left/right edges of the outline: wide foot, narrow skewed top, uneven jagged sides
+  const L0 = -5.6, R0 = 5.4, L1 = -1.6, R1 = 2.6;
+  for (let i = 0; i < pos.count; i++) {
+    const u = pos.getX(i), v = pos.getY(i) + 0.5, w = pos.getZ(i);
+    const t = Math.abs(w) * 2; // 0 at the mid-plane, 1 on the front/back face
+    const inset = bev * t * t * t;
+    const y0 = v * H;
+    let left = THREE.MathUtils.lerp(L0, L1, Math.pow(v, 1.15)) + 0.45 * fbm3(3.1, y0 * 0.22, 0, 3) + 0.15 * noise3(1.7, y0 * 0.9, 0);
+    let right = THREE.MathUtils.lerp(R0, R1, Math.pow(v, 0.95)) + 0.45 * fbm3(8.3, y0 * 0.22, 0, 3) + 0.15 * noise3(5.2, y0 * 0.9, 0);
+    left += inset; right -= inset;
+    let x = THREE.MathUtils.lerp(left, right, u + 0.5);
+    // slanted, broken top edge
+    const top = H - 0.9 * (x - L1) / (R1 - L1) + 0.35 * fbm3(x * 0.4, 7.7, 0, 3) - inset;
+    let y = v * top;
+    // thickness: slightly thinner toward the top, lumpy faces
+    const thick = T * (1 - 0.25 * v) * (1 + 0.12 * fbm3(x * 0.18, y * 0.18, 2.2, 3));
+    let z = w * thick + Math.sign(w) * (0.22 * fbm3(x * 0.25, y * 0.25, w > 0 ? 0 : 9, 4) + 0.05 * noise3(x * 1.4, y * 1.4, w * 3)) * t;
+    x += 0.08 * noise3(x * 1.1, y * 1.1, z + 4);
+    y = Math.max(y, 0) + 0.08 * noise3(x * 1.2, y * 1.2, z + 1) * (v > 0.02 ? 1 : 0);
+    pos.setXYZ(i, x, y, z);
+  }
+  g.deleteAttribute('normal'); g.deleteAttribute('uv');
+  const merged = mergeVertices(g, 1e-4);
+  merged.computeVertexNormals();
+  // box-projected UVs from the smoothed normal (~4.5 m per texture tile)
+  const P = merged.attributes.position, N = merged.attributes.normal, UV = new Float32Array(P.count * 2), s = 1 / 4.5;
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i), ax = Math.abs(N.getX(i)), ay = Math.abs(N.getY(i)), az = Math.abs(N.getZ(i));
+    const [a, b] = az >= ax && az >= ay ? [x, y] : ax >= ay ? [z + 0.37 * 4.5, y] : [x, z + 0.61 * 4.5];
+    UV[i * 2] = a * s; UV[i * 2 + 1] = b * s;
+  }
+  merged.setAttribute('uv', new THREE.BufferAttribute(UV, 2));
+  merged.setAttribute('uv1', merged.attributes.uv);
+  return merged;
 }
 
 // Dust motes that sparkle in the light
@@ -183,7 +226,7 @@ export async function buildWorld(scene, renderer, onProgress) {
   // ---------------- Lighting ----------------
   const firePos = new THREE.Vector3(-2, floorHeightAt(-2, 0), 0);
   W.firePos = firePos;
-  const fire = new Fire(scene, firePos.clone().add(new THREE.Vector3(0, 0.25, 0)), { size: 1.5, shadow: true, count: 55 });
+  const fire = new Fire(scene, firePos.clone().add(new THREE.Vector3(0, 0.25, 0)), { size: 1.5, shadow: true, count: 55, cards: 3 });
   W.fire = fire;
   W.updaters.push((dt, t) => fire.update(dt, t));
 
@@ -207,6 +250,19 @@ export async function buildWorld(scene, renderer, onProgress) {
   crackLight.shadow.bias = -0.001;
   scene.add(crackLight, crackLight.target);
   W.crackLight = crackLight;
+
+  // shadow maps are the most expensive part of a frame (the fire's cube map redraws the whole cave 6 times),
+  // so refresh them in rotation instead of every frame: fire every 2nd frame, the two spots every 4th
+  const shadowLights = [fire.light, sun, crackLight];
+  // (only ever raise the flag: three clears it once the map is drawn, so a skipped frame never leaves a map undrawn)
+  for (const l of shadowLights) { l.shadow.autoUpdate = false; l.shadow.needsUpdate = true; }
+  let shadowFrame = 0;
+  W.updaters.push(() => {
+    const f = shadowFrame++;
+    if (f % 2 === 0) fire.light.shadow.needsUpdate = true;
+    if (f % 4 === 1 && sun.intensity > 0) sun.shadow.needsUpdate = true;
+    if (f % 4 === 3 && crackLight.intensity > 0) crackLight.shadow.needsUpdate = true;
+  });
 
   // very faint bounce so the blacks aren't pure digital black
   const hemi = new THREE.HemisphereLight(0x3a4a50, 0x1a0c05, 0.07);
@@ -252,18 +308,22 @@ export async function buildWorld(scene, renderer, onProgress) {
   onProgress?.(0.7);
 
   // ---------------- Props ----------------
-  const [boulder, pit, trunk, branches, bucket, basket, stump, rockA, rockB, b2, b4, b5, bowl] = await Promise.all(
-    ['boulder_01', 'stone_fire_pit', 'dead_tree_trunk', 'dry_branches_medium_01', 'wooden_bucket_01', 'wicker_basket_01', 'tree_stump_01', 'rock_face_01', 'rock_face_02', 'namaqualand_boulder_02', 'namaqualand_boulder_04', 'namaqualand_boulder_05', 'wooden_bowl_01'].map(loadModel)
+  const [pit, trunk, bucket, basket, stump, rockA, rockB, b2, b4, b5, bowl] = await Promise.all(
+    ['stone_fire_pit', 'dead_tree_trunk', 'wooden_bucket_01', 'wicker_basket_01', 'tree_stump_01', 'rock_face_01', 'rock_face_02', 'namaqualand_boulder_02', 'namaqualand_boulder_04', 'namaqualand_boulder_05', 'wooden_bowl_01'].map(loadModel)
   );
   onProgress?.(0.85);
 
-  // The door-stone: a huge boulder the Cyclops rolls across the entrance
-  prepModel(boulder);
-  fitHeight(boulder, 11.5);
-  const bb = new THREE.Box3().setFromObject(boulder);
-  const bw = bb.max.x - bb.min.x;
-  boulder.scale.x *= 13 / bw;
-  boulder.scale.z *= 0.55;
+  // The door-stone: one tall, rough slab of rock (an irregular upright trapezoid) the Cyclops drags across the entrance
+  const tl = new THREE.TextureLoader();
+  const slabTex = (f, srgb) => { const t = tl.load(`assets/tex/marble_cliff_02/${f}`); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const slabMat = new THREE.MeshStandardMaterial({
+    map: slabTex('diff.jpg', true), normalMap: slabTex('nor.jpg'), roughnessMap: slabTex('rough.jpg'),
+    color: 0xb8a890, roughness: 1, metalness: 0,
+  });
+  const slab = new THREE.Mesh(makeDoorSlab(), slabMat);
+  slab.castShadow = slab.receiveShadow = true;
+  const boulder = new THREE.Group();
+  boulder.add(slab);
   const doorZ = LAYOUT.boulderZ;
   const tunnelXAt = (z) => (z - LAYOUT.tunnelZ0) * 0.09;
   W.doorClosed = new THREE.Vector3(tunnelXAt(doorZ), -0.6, doorZ);
@@ -281,12 +341,46 @@ export async function buildWorld(scene, renderer, onProgress) {
   pit.scale.multiplyScalar(2.6 / (pb.max.x - pb.min.x));
   pit.position.copy(firePos);
   scene.add(pit);
-  // firewood logs in the pit
-  prepModel(branches);
-  fitHeight(branches, 0.5);
-  branches.position.copy(firePos).add(new THREE.Vector3(0, 0.05, 0));
-  branches.traverse((o) => { if (o.isMesh) { o.material = o.material.clone(); o.material.emissive = new THREE.Color(0xff3a08); o.material.emissiveIntensity = 0.6; } });
-  scene.add(branches);
+  // firewood: charred logs on a bed of ash ("Campfire Wood Survival Warm and Light" by digrafstudio, CC-BY)
+  const logs = await new Promise((res, rej) => gltf.load('assets/models/campfire_logs/campfire_logs.glb', (g) => res(g.scene), undefined, rej));
+  prepModel(logs);
+  logs.updateMatrixWorld(true);
+  const lb0 = new THREE.Box3().setFromObject(logs, true); // precise: the model is authored tilted, the loose box is far too big
+  logs.scale.multiplyScalar(1.7 / Math.max(lb0.max.x - lb0.min.x, lb0.max.z - lb0.min.z));
+  logs.updateMatrixWorld(true);
+  const lb = new THREE.Box3().setFromObject(logs, true);
+  logs.position.copy(firePos).add(new THREE.Vector3(-(lb.min.x + lb.max.x) / 2, 0.08 - lb.min.y, -(lb.min.z + lb.max.z) / 2));
+  const emberT = { value: 0 };
+  W.updaters.push((dt) => (emberT.value += dt));
+  logs.traverse((o) => {
+    if (!o.isMesh) return;
+    const m = o.material = o.material.clone();
+    m.color.setRGB(0.22, 0.2, 0.19); // soot-dark: the fire light is right on top of them
+    m.onBeforeCompile = (sh) => {
+      // glowing coals: charred (dark) wood near the base and the core of the fire smoulders, breathing slowly
+      sh.uniforms.uT = emberT; sh.uniforms.uC = { value: firePos.clone() };
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;')
+        .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+        varying vec3 vWP; uniform float uT; uniform vec3 uC;
+        float eh(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7)))*43758.5453); }
+        float en(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+          return mix(mix(mix(eh(i),eh(i+vec3(1,0,0)),f.x),mix(eh(i+vec3(0,1,0)),eh(i+vec3(1,1,0)),f.x),f.y),
+                     mix(mix(eh(i+vec3(0,0,1)),eh(i+vec3(1,0,1)),f.x),mix(eh(i+vec3(0,1,1)),eh(i+vec3(1,1,1)),f.x),f.y),f.z); }`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        {
+          vec3 d = vWP - uC;
+          float core = smoothstep(0.95, 0.1, length(d.xz)) * smoothstep(0.75, 0.05, d.y);
+          float charred = smoothstep(0.12, 0.03, dot(diffuseColor.rgb, vec3(0.33))); // colour is already x0.4
+          float cracks = smoothstep(0.45, 0.8, en(vWP * 14.0 + vec3(0.0, uT * 0.15, 0.0)));
+          float breathe = 0.65 + 0.35 * en(vWP * 3.0 + vec3(uT * 0.6));
+          float g = core * charred * (0.25 + 1.6 * cracks) * breathe;
+          totalEmissiveRadiance += vec3(1.0, 0.2, 0.02) * g * 2.0;
+        }`);
+    };
+  });
+  scene.add(logs);
+  W.fireLogs = logs;
 
   // the olive-wood club/log that becomes the stake
   prepModel(trunk);
@@ -383,7 +477,7 @@ export async function buildWorld(scene, renderer, onProgress) {
     const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.4), ropeMat);
     stick.position.set(x, y + 0.7, z); stick.rotation.z = 0.25;
     scene.add(stick);
-    const f = new Fire(scene, new THREE.Vector3(x + 0.17, y + 1.4, z), { size: 0.35, count: 16, smoke: false, intensity: 1.2 });
+    const f = new Fire(scene, new THREE.Vector3(x + 0.17, y + 1.4, z), { size: 0.35, count: 16, smoke: false, intensity: 1.2, cards: 2 });
     W.updaters.push((dt, t) => f.update(dt, t));
     W.torches.push(f);
   }
