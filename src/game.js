@@ -9,10 +9,13 @@ import { Physics } from './physics.js';
 import { Fire } from './fire.js';
 import { loadNav, navSeek, tunnelCenterX } from './nav.js';
 import { updateCower } from './cower.js';
+import { addAnger, wantsSwat, swatTargets, rageSwat, updateFlung, updateSwatCam, SWAT_SLOW } from './swat.js';
 import { setupCheeseCrew, startCheeseRun, cheeseStep, poseCheese, endCheese } from './cheese.js';
 import { Player } from './player.js';
+import { findBed, lieDown, sleepPose, standUp, placeBrand, updateBrand, brandTipWorld, brandHolder, pickUpBrand, dropBrand, takeBrand, stabEyeCine } from './brand.js';
 import { Input, isTouchDevice, attachTouchControls } from './input.js';
 import { HelpScreen } from './help.js';
+import { installVolume } from './volume.js';
 import { Audio } from './audio.js';
 import { Particles, Decals } from './fx.js';
 import { BloodSpray, BloodSplats, SkinStains, addStump } from './blood.js';
@@ -29,6 +32,16 @@ const GRIP = 0.8;
 const EAT_CAM_HOLD = 1.4;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const flat = (v) => V(v.x, 0, v.z);
+// closest points between segments a0-a1 and b0-b1 -> [on a, on b]
+function segClosest(a0, a1, b0, b1) {
+  const d1 = a1.clone().sub(a0), d2 = b1.clone().sub(b0), r = a0.clone().sub(b0);
+  const A = d1.dot(d1), E = d2.dot(d2), F = d2.dot(r), C = d1.dot(r), B = d1.dot(d2), den = A * E - B * B;
+  const cl = (x) => Math.min(1, Math.max(0, x));
+  let s = den > 1e-8 ? cl((B * F - C * E) / den) : 0;
+  let t = E > 1e-8 ? (B * s + F) / E : 0;
+  if (t < 0) { t = 0; s = A > 1e-8 ? cl(-C / A) : 0; } else if (t > 1) { t = 1; s = A > 1e-8 ? cl((B - C) / A) : 0; }
+  return [a0.clone().addScaledVector(d1, s), b0.clone().addScaledVector(d2, t)];
+}
 
 // walkable test for the giant and the sheep (inside the cave air, away from walls)
 function walkable(x, z, margin = 1.2) {
@@ -155,11 +168,14 @@ export class Game {
     // heated stake glow
     this.stakeGlow = new THREE.PointLight(0xff5a10, 0, 5, 2);
     scene.add(this.stakeGlow);
+    // the torch you carry (or set down) lights up the rock around it
+    this.torchLight = new THREE.PointLight(0xff9a48, 0, 18, 1.7);
+    scene.add(this.torchLight);
     this.stakeHeat = 0;
 
     // Metal Gear / GTA systems
     this.VIEW_DOT = 0.2; this.VIEW_RANGE = 34;
-    this.CY_WALK_PACE = 0.4; // giant's walking speed (and walk-cycle rate) multiplier
+    this.CY_WALK_PACE = 0.45; // giant's walking speed (and walk-cycle rate) multiplier
     this.noiseRings = [];
     this.isAir = (x, z) => walkable(x, z, 0.3);
     this.radar = new Radar(this);
@@ -171,6 +187,9 @@ export class Game {
     this.qte = new QTE(this);
     this.photo = new PhotoMode(this);
     this.help = new HelpScreen(this);
+    const makeVolume = installVolume(this.audio);
+    this.help.el.querySelector('.head').after(makeVolume());
+    document.getElementById('howto')?.after(makeVolume());
     this.input.onHelp = () => this.help.toggle();
     this.pickups = new Pickups(this);
     this.realTasks = [];
@@ -220,6 +239,8 @@ export class Game {
     this.hud.fade.style.opacity = 0;
     this.started = true;
     document.body.classList.add('playing');
+    // a burning torch always lies in the fire, from the very start: pick it up (E) to light the cave walls
+    this.placeBrand();
     if (this.checkpoint) this.jumpTo(this.checkpoint); else this.runIntro();
   }
 
@@ -483,80 +504,23 @@ export class Game {
     this.eyeHits = 0;
     this.setTension(0.25);
     this.say('He\'s asleep… it\'s now or never', 3, 'Eurylochus');
-    this.placeBrand();
+    if (!this.player.carrying && !this._brandOnFloor) this.placeBrand(); // re-set in the fire, handle away from his face
     this.world.interact.find((i) => i.id === 'log').enabled = true;
     this.gatherCrew();
   }
 
   // where he lies: on his side with his face a few metres from the fire (so the firelight is on it)
   // and his body in the open. yaw is his lying heading (head along local -x, face along local +z)
-  findBed() {
-    const F = this.world.firePos, g = this.nav.giant, H = this.cy.height;
-    const from = this.cy.root.position;
-    let best = null;
-    for (let i = 0; i < 48; i++) {
-      const yaw = i / 48 * Math.PI * 2;
-      const head = V(-Math.cos(yaw), 0, Math.sin(yaw)), face = V(Math.sin(yaw), 0, Math.cos(yaw));
-      for (const D of [4.2, 4.8, 5.4]) {
-        // eye sits ~0.96 H along the head axis and a little toward the face from the root
-        const root = F.clone().addScaledVector(face, -D - 0.55).addScaledVector(head, -0.96 * H);
-        let ok = true;
-        for (let a = -0.05; a <= 1.02 && ok; a += 0.08) for (const o of [-1.6, 0, 1.6]) {
-          const q = root.clone().addScaledVector(head, a * H).addScaledVector(face, o);
-          if (!g.clear(q.x, q.z) || flat(q).distanceTo(flat(F)) < 2.2) { ok = false; break; }
-        }
-        // room for the men (and you) between his face and the fire
-        const gap = F.clone().addScaledVector(face, -D * 0.5);
-        if (ok && !this.nav.man.clear(gap.x, gap.z)) ok = false;
-        if (!ok) continue;
-        const cost = root.distanceTo(from) + D * 2;
-        if (!best || cost < best.cost) best = { pos: V(root.x, 0, root.z), yaw, cost };
-      }
-    }
-    return best || { pos: V(-15, 0, -12), yaw: null };
-  }
+  findBed() { return findBed(this); }
 
-  // the burning brand: a stick lying with its tip in the fire, on the far side from his face
-  placeBrand() {
-    const W = this.world, S = W.stakeLog, F = W.firePos;
-    if (!this._brandTip) {
-      S.scale.setScalar(0.62);
-      S.rotation.set(0, 0, 0); S.position.set(0, 0, 0); S.updateMatrixWorld(true);
-      const b = new THREE.Box3().setFromObject(S), c = b.getCenter(V()), sz = b.getSize(V());
-      const tip = sz.x >= sz.z ? V(b.max.x, c.y, c.z) : V(c.x, c.y, b.max.z);
-      this._brandTip = tip.clone().sub(V(c.x, 0, c.z)); this._brandCenter = V(c.x, b.min.y, c.z);
-      this.brandFire = new Fire(this.scene, V(), { size: 0.32, count: 14, light: false, smoke: true, cards: 2 });
-      W.updaters.push((dt, t) => this.updateBrand(dt, t));
-    }
-    const face = this.bed?.yaw != null ? V(Math.sin(this.bed.yaw), 0, Math.cos(this.bed.yaw)) : V(1, 0, 0);
-    const u = face.clone(); // from the fire away from his face
-    const d = this._brandTip.clone().setY(0).normalize();
-    const th = Math.atan2(-u.x, -u.z) - Math.atan2(d.x, d.z);
-    S.rotation.set(0, th, 0);
-    const tipW = F.clone().addScaledVector(u, 0.55);
-    const off = this._brandTip.clone().setY(0).applyAxisAngle(V(0, 1, 0), th);
-    const cOff = this._brandCenter.clone().setY(0).applyAxisAngle(V(0, 1, 0), th);
-    S.position.set(tipW.x - off.x - cOff.x, 0, tipW.z - off.z - cOff.z);
-    S.position.y = floorHeightAt(S.position.x, S.position.z) - this._brandCenter.y + 0.05;
-    S.visible = true;
-    const log = W.interact.find((i) => i.id === 'log'); log.pos.copy(S.position);
-  }
-
-  // keep the little flame on the brand's tip, on the floor or in your hands
-  updateBrand(dt, t) {
-    const f = this.brandFire; if (!f) return;
-    const P = this.player, S = this.world.stakeLog;
-    let on = false;
-    if (P.carrying && P.carryMesh && this.stakeHeat > 0) { P.carryMesh.localToWorld(f.group.position.copy(this._brandTip)); on = true; }
-    else if (S.visible && this._brandTip) { S.localToWorld(f.group.position.copy(this._brandTip)); on = true; }
-    f.group.visible = on;
-    if (on) f.update(dt, t);
-  }
+  // the burning brand: a real torch with its head in the fire (brand.js)
+  placeBrand() { placeBrand(this); }
+  updateBrand(dt, t) { updateBrand(this, dt, t); }
 
   // the men creep up and crowd round his sleeping face, in the firelight
   gatherCrew() {
     if (!this.bed || this.bed.yaw == null) return;
-    const eye = this.cy.eyeWorld(), face = V(Math.sin(this.bed.yaw), 0, Math.cos(this.bed.yaw)), F = this.world.firePos;
+    const eye = this.cy.eyeWorld(), face = this.bed.face.clone(), F = this.world.firePos;
     const men = this.soldiers.filter((s) => s.alive && !s.escaped && s.state !== 'fight');
     // spots on both flanks of his face, nearest first; the lane straight in front of the eye stays open for you
     const spots = [];
@@ -571,58 +535,15 @@ export class Game {
   }
   scatterCrew() { for (const s of this.soldiers) if (s.state === 'gather') { s.state = 'panic'; s.gatherAt = null; } }
 
-  async lieDown(yawWant = null) {
-    const r = this.cy.root, start = r.position.clone(), rot0 = r.rotation.clone();
-    this.cy.play('idle', 1, 0.25);
-    this.cy.eyeOpen = 1;
-    // lie on his side (rolled onto his right shoulder), face toward the fire (or the head toward the middle of the cave)
-    const toC = V(-start.x, 0, -start.z).normalize();
-    const yaw = yawWant ?? Math.atan2(toC.z, -toC.x); // local -x (where the head goes after the roll)
-    let dy = yaw - rot0.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-    r.rotation.order = 'YXZ';
-    for (let t = 0; t < 3; t += 1 / 30) {
-      await this.wait(1 / 30);
-      const k = THREE.MathUtils.smoothstep(t / 3, 0, 1);
-      r.rotation.set(0, rot0.y + dy * Math.min(1, k * 2), Math.PI / 2 * k);
-      r.position.set(start.x, start.y + 1.5 * k, start.z);
-      this.cy.eyeOpen = 1 - k;
-      if (t > 2.6 && !this._laid) { this._laid = true; this.audio.stomp(start, 1.6); this.player.shake = 1; this.particles.dust(start, 40, 6); }
-    }
-    this.cy.eyeOpen = 0;
-    this.cyState.lying = true;
-    this.sleepArms();
-  }
-
-  // arms folded for sleeping on his side: lower hand tucked under the head like a pillow, upper arm draped in front
-  sleepArms() {
-    const cy = this.cy, r = cy.root, H = cy.height;
-    const head = V(-Math.cos(r.rotation.y), 0, Math.sin(r.rotation.y)); // local -x after the roll
-    const face = V(Math.sin(r.rotation.y), 0, Math.cos(r.rotation.y));
-    const at = (along, out, up) => { const p = r.position.clone().addScaledVector(head, along * H).addScaledVector(face, out * H); p.y = floorHeightAt(p.x, p.z) + up * H; return p; };
-    cy.ik.R = { target: at(0.92, 0.12, 0.03), w: 1 };
-    cy.ik.L = { target: at(0.55, 0.22, 0.06), w: 1 };
-    // face turned out toward the fire so the firelight is on it (and on the eye)
-    cy.headLift = 1;
-    const e = cy.eyeWorld(); cy.lookAt = this.bed?.yaw != null ? this.world.firePos.clone().setY(e.y) : e.clone().addScaledVector(face, 10);
-  }
-
-  async standUp() {
-    this.cy.ik.R = null; this.cy.ik.L = null; this.cy.lookAt = null; this.cy.headLift = 0;
-    const r = this.cy.root, start = r.position.clone(), rot0 = r.rotation.clone();
-    for (let t = 0; t < 2.5; t += 1 / 30) {
-      await this.wait(1 / 30);
-      const k = THREE.MathUtils.smoothstep(t / 2.5, 0, 1);
-      r.rotation.set(rot0.x * (1 - k), rot0.y, rot0.z * (1 - k));
-      r.position.y = start.y - (start.y - floorHeightAt(start.x, start.z)) * k;
-    }
-    r.rotation.x = 0; r.rotation.z = 0;
-    this.cyState.lying = false;
-  }
+  // mocap lie-down onto his back, neck bent aside toward the fire (brand.js)
+  lieDown(yawWant = null) { return lieDown(this, yawWant); }
+  sleepArms() { return sleepPose(this); }
+  standUp() { return standUp(this); }
 
   // blinded on the floor: rolls and kicks, both hands clawing at the burning eye, screaming
   async thrash(dur) {
-    const cy = this.cy, r = cy.root, y0 = r.rotation.y, z0 = r.rotation.z, base = r.position.clone(), H = cy.height;
-    const face = () => V(Math.sin(r.rotation.y), 0, Math.cos(r.rotation.y));
+    const cy = this.cy, r = cy.root, x0 = r.rotation.x, y0 = r.rotation.y, z0 = r.rotation.z, base = r.position.clone(), H = cy.height;
+    const face = () => cy.eyeDir();
     let nextYell = 0.9;
     for (let t = 0; t < dur; t += 1 / 30) {
       await this.wait(1 / 30);
@@ -639,7 +560,7 @@ export class Game {
       this.player.shake = Math.max(this.player.shake, 0.9 * k);
       if (t > nextYell) { nextYell = t + 1.1 + Math.random() * 0.4; this.audio.cyShriek?.(eye, { vol: 1.3 }); this.audio.roar(eye, { dur: 1.6, vol: 1.2, pitch: 1.25, pain: true }); }
     }
-    r.rotation.set(0, y0, z0); r.position.copy(base);
+    r.rotation.set(x0, y0, z0); r.position.copy(base);
     cy.forceSquat = 0; cy.squatRate = 1.2; cy.ik.R = null; cy.ik.L = null;
   }
 
@@ -670,6 +591,7 @@ export class Game {
     await this.wait(0.5);
     this.player.locked = false;
     this.player.vel.set(0, 3, 0).addScaledVector(flat(this.player.pos.clone().sub(eye)).normalize(), 7);
+    this.placeBrand(); // a fresh torch in the fire (the spent one is in his eye)
     await this.thrash(3.6);
     await this.standUp();
     // on his feet, still clutching the eye and rocking in pain before he starts to grope around
@@ -689,6 +611,7 @@ export class Game {
     crewBark(this, 'blind', { n: 3, delay: 6 });
     this.world.interact.filter((i) => i.id === 'straw').forEach((i) => (i.enabled = true));
     await Promise.race([this.wait(55), this.until(() => this.player.disguised && this.phaseT > 12)]);
+    await this.until(() => !this.cyState.downed);
     this.runGate();
   }
 
@@ -705,6 +628,7 @@ export class Game {
     this.cyState.heading = Math.PI;
     this.cyState.mode = 'gate';
     this.cy.play('idle', 0.6, 0.6);
+    if (this.cyState.buttPending) this.buttCollapse();
     this.flock.mode = 'exit';
     this.flock.released = 0;
     const doorX = this.world.boulder.position.x;
@@ -795,15 +719,41 @@ export class Game {
       const run = st.walkSpeed > 3, pace = run ? 1 : this.CY_WALK_PACE;
       let sp = (final ? Math.min(st.walkSpeed, dist * 1.5) : st.walkSpeed) * pace;
       if (st.hurt > 0) sp *= 0.15;
+      sp *= this.buttSlow();
       if ((this.cy.sitW || 0) > 0.15) sp = 0; // still getting up off the floor // an arrow just went in: he stops short and clutches it
       const dx = (d.x / Math.max(dist, 1e-4)) * sp * dt, dz = (d.z / Math.max(dist, 1e-4)) * sp * dt;
-      if (inSlot) { r.position.x += dx; r.position.z += dz; st.blockedT = 0; }
+      if (st.unstickTo) {
+        // wedged in the rock: slide straight back out to the nearest open floor, ignoring the grid
+        const u = V(st.unstickTo.x - r.position.x, 0, st.unstickTo.z - r.position.z), ul = u.length();
+        if (ul < 0.1 || nav.clear(r.position.x, r.position.z)) st.unstickTo = null;
+        else r.position.addScaledVector(u.normalize(), Math.min(ul, 1.6 * dt));
+      } else if (inSlot) { r.position.x += dx; r.position.z += dz; st.blockedT = 0; }
       else if (nav.step(r.position, dx, dz)) st.blockedT = 0;
-      else if ((st.blockedT = (st.blockedT || 0) + dt) > 0.8) { st.walkTarget = null; st.path = null; st.blockedT = 0; this.cy.play('idle'); }
+      else if ((st.blockedT = (st.blockedT || 0) + dt) > 0.8) { st.blockedT = 0; this.cyUnstick(); }
+      // watchdog: meant to be walking but hasn't really moved for 1.5 s (pinned against a wall, jammed in a gap)
+      if (!inSlot && sp > 0.2) {
+        const pr = st.prog;
+        if (!pr || this.time - pr.t > 1.5) {
+          // less than a third of the distance he should have covered (so a slow, limping walk never counts as stuck)
+          if (pr && this.time - pr.t < 2.5 && flat(r.position).distanceTo(pr.p) < pr.sp * (this.time - pr.t) * 0.33) this.cyUnstick();
+          st.prog = { t: this.time, p: flat(r.position), sp };
+        }
+      } else st.prog = null;
       r.position.y = nav.floorY(r.position.x, r.position.z) ?? floorHeightAt(r.position.x, r.position.z);
-      this.cy.play(run ? 'run' : 'walk', 0.5, run ? 0.35 : 0.42 * pace);
-      st.step += dt * sp;
-      if (st.step > 3.2) { st.step = 0; this.stomp(); }
+      this.cy.play(run ? 'run' : 'walk', 0.5, (run ? 0.35 : 0.42 * pace) * this.buttSlow());
+      // a stomp exactly when a foot hits the ground: watch each foot's height above his root,
+      // fire when it has been coming down and stops (the low point of the step)
+      if (sp > 0.05) {
+        const fs = (st.feet ||= [{ b: 'LeftFoot', s: -1 }, { b: 'RightFoot', s: 1 }].map((f) => ({ ...f, lo: 1e9, hi: -1e9 })));
+        for (const f of fs) {
+          const y = this.cy.bones[f.b].getWorldPosition(this._fv ||= V()).y - r.position.y;
+          f.lo = Math.min(f.lo + dt * 0.3, y); f.hi = Math.max(f.hi - dt * 0.3, y);
+          const vy = f.y === undefined ? 0 : (y - f.y) / Math.max(dt, 1e-4);
+          if (f.vy < -0.05 && vy >= -0.05 && y < f.lo + (f.hi - f.lo) * 0.35 && !f.down) { f.down = true; this.stomp(f.s, run ? 0.8 : 1, this._fv.clone().setY(r.position.y)); }
+          if (y > f.lo + (f.hi - f.lo) * 0.5) f.down = false;
+          f.y = y; f.vy = vy;
+        }
+      }
     }
     if (st.hurt > 0) st.hurt -= dt;
     // turn toward heading
@@ -811,11 +761,12 @@ export class Game {
     if (!st.lying) r.rotation.y += dh * Math.min(1, dt * 2);
   }
 
-  stomp() {
-    const p = this.cy.root.position;
-    this.audio.stomp(p, 1);
+  stomp(side = 0, k = 1, at = null) {
+    const p = at || this.cy.root.position;   // the landing foot, so the thud comes from the correct side
+    this.audio.stomp(p, k * (0.9 + Math.random() * 0.2));
     const d = p.distanceTo(this.player.pos);
     this.player.shake = Math.max(this.player.shake, Math.min(1.1, 9 / (d + 3)));
+    this.player.thud?.(k * Math.min(1, 12 / (d + 4)), side || (Math.random() < 0.5 ? -1 : 1));
     if (d < 18) this.haptic(Math.round(60 * (1 - d / 18)) + 10);
     this.particles.dust(p.clone().add(V((Math.random() - 0.5) * 3, 0.2, (Math.random() - 0.5) * 3)), 6, 2.5);
   }
@@ -845,7 +796,7 @@ export class Game {
   // the crewman the giant goes for: whoever just cut him, else the nearest man in the open
   crewPrey(maxDist = Infinity) {
     const cp = this.cy.root.position, now = this.time;
-    const men = this.soldiers.filter((s) => s.alive && s.root.visible && s.state !== 'grabbed' && s.state !== 'dead' && s.state !== 'crawlOut');
+    const men = this.soldiers.filter((s) => s.alive && s.root.visible && s.state !== 'grabbed' && s.state !== 'dead' && s.state !== 'crawlOut' && s.state !== 'flung');
     const score = (s) => flat(s.root.position).distanceTo(flat(cp)) - (s.hitAt && now - s.hitAt < 6 ? 8 : 0) + (s.sitting ? 6 : 0);
     men.sort((a, b) => score(a) - score(b));
     const m = men[0];
@@ -936,7 +887,9 @@ export class Game {
       }
       return true;
     };
-    const parts = [vb.head, vb.lArm || vb.lShoulder, vb.spine2 || vb.spine1, null];
+    // the first two mouthfuls are his arms and he is still alive (shoot the fist and he drops, maimed); the third takes the head
+    const parts = [vb.lArm || vb.lShoulder, vb.rArm || vb.rShoulder, vb.head, vb.spine2 || vb.spine1, null];
+    const RADII = [0.06, 0.06, 0.075, 0.13], DEATH_BITE = 2;
     for (let n = 0; n < parts.length; n++) {
       const side = (n % 2 ? -1 : 1) * 0.35;
       // bring him in and lunge
@@ -948,8 +901,9 @@ export class Game {
       this.gore.gore(mouth.clone().addScaledVector(fwd(), 0.4), fwd().multiplyScalar(0.6).add(sideDir).add(V(0, 0.15, 0)), n === 3 ? 260 : 180, 5.5);
       this.gore.gore(mouth.clone().addScaledVector(fwd(), 0.4), sideDir.clone().negate().add(V(0, -0.4, 0)), 70, 4);
       this.decals.add(V(mouth.x, floorHeightAt(mouth.x, mouth.z), mouth.z), 1 + n * 0.5);
-      if (n === 0) { alive = false; this._preyAlive = false; victim.play('sad_pose', 0.1); crewBark(this, 'eaten', { n: 2, delay: 0.9, spread: 1.4 }); }
-      if (parts[n]) eat(parts[n], [0.075, 0.06, 0.13][n]);
+      if (n === DEATH_BITE) { alive = false; this._preyAlive = false; victim.play('sad_pose', 0.1); crewBark(this, 'eaten', { n: 2, delay: 0.9, spread: 1.4 }); }
+      else if (alive) this.audio.scream(victim.root.position.clone());
+      if (parts[n]) eat(parts[n], RADII[n]);
       // blood on his lips and chin, running further down with every bite
       this.cyStains.add('mouth', mouth, cy.bones.Head, 0.28, 1, 0.6 + n * 0.5);
       if (n === parts.length - 1) { victim.root.visible = false; break; }
@@ -965,7 +919,7 @@ export class Game {
       this.audio.sfx?.('chew', { pos: cy.mouthWorld(), vol: 1, rate: 0.55, wet: 0.5 });
       if (!(await step(chewDur, (k, t) => { ik.target.lerp(hold(0.1, side), 0.12); cy.bite = -0.25 * (1 - k); cy.chew = Math.sin(t * 7) * 0.6; }))) break;
     }
-    // shot in the hand before he bit: the fist opens and the man falls out alive
+    // shot in the hand before the killing bite: the fist opens and the man falls out alive
     if (alive && (this._handShot || this.cyState.stun > 0)) { cy.bite = cy.chew = 0; await this.releasePrey(victim); return; }
     // swallow and put the arm down
     await this.wait(0.6 * CY_SLOW);
@@ -1182,6 +1136,9 @@ export class Game {
       st.alert = Math.max(0, st.alert - dt * 0.08);
       if (st.alert > 1 && st.noiseAt && st.noiseAt.distanceTo(P.pos) < 3) this.alertSys.spotted();
       else if (st.alert > 0.35) this.alertSys.suspicious();
+      // losing his temper: a flat, furious swat along the floor that throws the men against the walls
+      st.anger = Math.max(0, (st.anger || 0) - dt * 0.015);
+      if (wantsSwat(this)) { const tg = swatTargets(this); if (tg.length) { this.rageSwat(tg); return; } }
       // his men first: while crewmen are within reach he goes for them, not for Odysseus (unless you are right under his hand)
       const prey = st.mode === 'tend' && !(this.phase === 'night' && this.cyMeals >= 2) && st.alert > 1 && !st.grabbing && !this._eating && this.time > (st.eatCd || 0) ? this.crewPrey(18) : null;
       if (prey && !(dP < 4 && !P.hiddenInStraw)) { st.alert = 0.6; st.walkTarget = null; this.cyEat(prey); }
@@ -1219,6 +1176,135 @@ export class Game {
     this.hud.dmg.style.opacity = Math.max(0, danger - 0.5) * 0.8;
   }
 
+  rageSwat(targets) { return rageSwat(this, targets); }
+
+  // the giant got stuck while walking: get out of any rock, re-plan, and when he was chasing a noise,
+  // break off with a short detour first (otherwise he keeps walking into the same wall toward the same sound)
+  cyUnstick() {
+    const st = this.cyState, r = this.cy.root, nav = this.nav.giant;
+    st.path = null; st.repathT = 0; st.prog = null;
+    if (!nav.clear(r.position.x, r.position.z)) {
+      const c = nav.nearestClear(r.position.x, r.position.z, 6);
+      if (c >= 0) { const [x, z] = nav._xz(c); st.unstickTo = V(x, 0, z); }
+    }
+    if (st.mode === 'script') return; // scripted walks (to his bed, to the door) keep their target
+    const hunting = st.alert > 1 && st.noiseAt;
+    st.noiseAt = null; st.alert = Math.min(st.alert, 0.6);
+    // a detour to open floor a few metres off, away from where he was heading
+    const back = st.walkTarget ? flat(r.position.clone().sub(st.walkTarget)).normalize() : V(1, 0, 0);
+    for (let i = 0; i < 16; i++) {
+      const a = Math.atan2(back.x, back.z) + (Math.random() - 0.5) * 2.4, dd = 3 + Math.random() * 4;
+      const x = r.position.x + Math.sin(a) * dd, z = r.position.z + Math.cos(a) * dd;
+      if (nav.clear(x, z) && nav.lineClear(r.position.x, r.position.z, x, z)) { st.walkTarget = V(x, 0, z); st.walkSpeed = hunting ? 2.4 : 1.5; return; }
+    }
+    st.walkTarget = null; this.cy.play('idle');
+  }
+
+  // the carried / dropped torch is a real light (the one resting in the fire adds nothing: the fire already lights it)
+  updateTorchLight(t) {
+    const L = this.torchLight, P = this.player;
+    const on = !!brandHolder(this) && (P.carrying || this._brandOnFloor || this._brandCine);
+    if (!on) { L.intensity = 0; return; }
+    brandTipWorld(this, L.position); L.position.y += 0.25;
+    const flick = 0.85 + Math.sin(t * 13.7) * 0.06 + Math.sin(t * 29.3) * 0.04 + Math.random() * 0.05;
+    L.intensity = (P.carrying ? 55 : 35) * flick;
+  }
+
+  // ------------------------------------------------------------------ the giant's body is solid
+  // capsules along his legs, trunk and head (standing or lying), pushing Odysseus and the men out sideways
+  giantBodyBlock() {
+    const cy = this.cy, b = cy.bones, k = cy.height / 1.95;
+    const P = (o) => o.getWorldPosition(V());
+    const head = cy.zones[1].world;
+    const caps = [
+      [P(b.LeftUpLeg), P(b.LeftLeg), 0.085 * k], [P(b.LeftLeg), P(b.LeftFoot), 0.07 * k],
+      [P(b.RightUpLeg), P(b.RightLeg), 0.085 * k], [P(b.RightLeg), P(b.RightFoot), 0.07 * k],
+      [P(b.Hips), P(b.Spine2), 0.15 * k], [P(b.Spine2), P(b.Neck), 0.14 * k],
+      [P(b.Neck), head.clone(), 0.11 * k],
+    ];
+    const push = (pos, rad, h) => {
+      const a = pos.clone().setY(pos.y + rad), c = pos.clone().setY(pos.y + Math.max(rad, h - rad));
+      for (const [p0, p1, R] of caps) {
+        const [q, s] = segClosest(a, c, p0, p1);
+        const d = q.clone().sub(s); d.y = 0;
+        const need = R + rad, len = d.length();
+        if (q.distanceTo(s) >= need) continue;
+        if (len < 1e-3) { d.copy(flat(pos).sub(flat(cy.root.position))); if (d.lengthSq() < 1e-6) d.set(1, 0, 0); }
+        d.normalize();
+        // horizontal separation needed so the 3D distance reaches R + rad
+        const dy = q.y - s.y, horiz = Math.sqrt(Math.max(0, need * need - dy * dy));
+        const out = horiz - len;
+        if (out > 0) pos.addScaledVector(d, out);
+      }
+    };
+    const Pl = this.player;
+    if (!Pl.dead && !Pl.grabbed && !Pl.locked) push(Pl.pos, Pl.radius, Pl.prone ? 0.5 : Pl.crouch ? 1.1 : Pl.height);
+    const skip = new Set(['grabbed', 'frozen', 'eaten', 'flung', 'dead']);
+    for (const s of this.soldiers) if (s.alive && !s.escaped && !skip.has(s.state)) push(s.root.position, 0.35, 1.8);
+  }
+
+  // ------------------------------------------------------------------ arrows in the backside (after the blinding)
+  // 5 arrows in his rear: he collapses and rolls on the floor in agony, then limps on, slow and clumsy
+  buttSlow() { const st = this.cyState; return st.weak ? 0.4 : 1 - Math.min(4, st.buttHits || 0) * 0.1; }
+
+  buttShot(best, dir, stuck) {
+    const cy = this.cy, st = this.cyState, bn = cy.bones;
+    if (!cy.blind || st.downed || st.weak || st.lying) return false;
+    if (![bn.Hips, bn.LeftUpLeg, bn.RightUpLeg].includes(best.z.obj)) return false;
+    const fwd = V(Math.sin(cy.root.rotation.y), 0, Math.cos(cy.root.rotation.y));
+    if (flat(dir.clone()).normalize().dot(fwd) < 0.25) return false; // must come from behind
+    st.buttHits = (st.buttHits || 0) + 1;
+    this.popText(`BUTT SHOT ${Math.min(5, st.buttHits)} / 5`);
+    this.audio.roar(best.at, { dur: 2, vol: 1.7, pitch: 1.35, pain: true });
+    this.audio.cyShriek?.(best.at, { vol: 1.2 });
+    cy.jolt = 1;
+    // he flinches and claps a hand over the arrow in his rear (not on the 5th: he goes down)
+    if (st.buttHits < 5) this.cyHurt(best.z, stuck || best.at, { force: true, dur: 3.2 });
+    if (st.buttHits === 1) this.say('Right in his backside! Keep shooting his rear', 3, 'Odysseus');
+    else if (st.buttHits === 3) this.say('He\'s limping… a couple more!', 2.5, 'Eurylochus');
+    if (st.buttHits >= 5) {
+      if (st.mode === 'blind' || st.mode === 'gate') this.buttCollapse();
+      else st.buttPending = true; // walking to the gate: he goes down as soon as he sits there
+    }
+    return true;
+  }
+
+  async buttCollapse() {
+    const cy = this.cy, st = this.cyState, r = cy.root, back = st.mode;
+    if (st.downed) return;
+    st.downed = true; st.buttPending = false;
+    st.mode = 'script'; st.walkTarget = null; st.path = null; st.alert = 0; st.noiseAt = null;
+    this._sweeping = false; cy.ik.R = null; cy.ik.L = null;
+    this.popText('HE\'S DOWN');
+    this.say('He\'s down! Go, go, go!', 3, 'Odysseus');
+    this.audio.cyShriek?.(cy.eyeWorld(), { vol: 1.6 });
+    this.audio.roar(cy.eyeWorld(), { dur: 4, vol: 1.9, pitch: 1.3, pain: true });
+    await lieDown(this, null);
+    cy.faceTurn = null; cy.pillow = 0;
+    // on his back: rocking, kicking, both hands clamped on his rear, howling
+    const y0 = r.rotation.y, z0 = r.rotation.z, base = r.position.clone(), H = cy.height, dur = 22;
+    let nextYell = 0.5;
+    for (let t = 0; t < dur; t += 1 / 30) {
+      await this.wait(1 / 30);
+      const k = Math.min(1, t / 0.5) * (t > dur - 1 ? dur - t : 1);
+      r.rotation.z = z0 + (Math.sin(t * 5.1) * 0.09 + Math.sin(t * 11.7) * 0.03) * k;
+      r.rotation.y = y0 + Math.sin(t * 2.3) * 0.08 * k;
+      r.position.set(base.x, base.y + Math.abs(Math.sin(t * 5.1)) * 0.12 * k, base.z);
+      const hips = cy.bones.Hips.getWorldPosition(V());
+      cy.ik.R = { target: hips.clone().add(V(0.25 * H / 13, -0.2 * H / 13, 0)), w: 0.9 * k };
+      cy.ik.L = { target: hips.clone().add(V(-0.25 * H / 13, -0.2 * H / 13, 0)), w: 0.9 * k };
+      if (Math.random() < 0.05) { this.audio.stomp(base, 0.6); this.particles.dust(base, 8, 3); }
+      if (t > nextYell) { nextYell = t + 1.4 + Math.random() * 1.2; this.audio.roar(cy.eyeWorld(), { dur: 1.8, vol: 1.3, pitch: 1.2 + Math.random() * 0.2, pain: true }); if (Math.random() < 0.5) this.audio.cyShriek?.(cy.eyeWorld(), { vol: 1.0 }); }
+      this.player.shake = Math.max(this.player.shake, 0.4 * k);
+    }
+    r.rotation.z = z0; r.rotation.y = y0; r.position.copy(base);
+    cy.ik.R = null; cy.ik.L = null;
+    await standUp(this);
+    st.weak = true; st.downed = false;
+    st.mode = this.phase === 'gate' ? 'gate' : back === 'gate' ? 'gate' : 'blind';
+    this.say('He\'s up, but he can barely walk', 3, 'Eurylochus');
+  }
+
   async sweepArms() {
     if (this._sweeping) return; this._sweeping = true;
     const cp = this.cy.root.position;
@@ -1238,7 +1324,7 @@ export class Game {
     if (st.grabbing) return;
     this.say('He\'s coming! Aim for the eye!', 1.5);
     crewBark(this, 'spotted', { n: 3 });
-    const caught = await this.cyGrab(() => this.player.pos.clone().add(V(0, 1.2, 0)), st.mode === 'blind' ? 1.0 : 1.5);
+    const caught = await this.cyGrab(() => this.player.pos.clone().add(V(0, 1.2, 0)), (st.mode === 'blind' ? 1.0 : 1.5) * (st.weak ? 2 : 1));
     if (caught && !this.player.dead) this.caughtPlayer(st.mode === 'blind' ? 'The blind giant\'s hand felt you out.' : 'The giant\'s hand closed around you.');
     else { this.cy.ik.R = null; st.alert = 0.7; }
   }
@@ -1265,7 +1351,7 @@ export class Game {
       }
     })();
     this.slowPunch = 2.6;
-    const escaped = P.hp > 40 && await this.qte.mash({ label: 'BREAK FREE', count: this.input.touch ? 9 : 12, time: 2.4 });
+    const escaped = P.hp > 40 && await this.qte.mash({ label: 'BREAK FREE', count: this.input.touch ? 9 : 12, time: 4.5 });
     lifting = false; this.slowPunch = 0;
     if (escaped) {
       // he drops you: you take a hard fall but live
@@ -1340,12 +1426,14 @@ export class Game {
       this.player.shake = Math.max(this.player.shake, 0.35);
       // arrows stick in the giant: the tip goes in at the skin, the shaft and fletching stay out
       const stuck = this.stickInGiant(p, best, a, dir);
+      if (this.buttShot(best, dir, stuck)) return true;
+      addAnger(this, p.kind === 'spear' ? 0.5 : 0.35);
       // the body jerks away from the arrow every time (even mid-volley)
       if (!this.cy.blind || st.mode !== 'script') { this.cy.jolt = 1; this.cy.joltSide = dir.x * Math.cos(this.cy.root.rotation.y) - dir.z * Math.sin(this.cy.root.rotation.y) > 0 ? 1 : -1; }
       st.alert = Math.min(2, st.alert + 0.8); st.noiseAt = this.player.pos.clone();
       const wasAsleep = st.mode === 'sleep';
       // shot the fist that holds a man: he lets go
-      const fistHit = best.z.obj === this.cy.bones.RightHand || best.z.obj === this.cy.bones.RightForeArm;
+      const bn = this.cy.bones, fistHit = best.z.obj === bn.RightHand || best.z.obj === bn.RightForeArm || best.z.obj === bn.RightArm;
       if (fistHit && this._eating && this._preyAlive && this.cy.grip > 0 && !this._handShot) {
         this._handShot = true;
         this.popText('HE LET GO');
@@ -1535,9 +1623,9 @@ export class Game {
   }
 
   // pain reaction: flinch, stop for a moment, and press a free hand over the arrow
-  async cyHurt(zone, at) {
+  async cyHurt(zone, at, { force = false, dur: holdDur = 2.2 } = {}) {
     const cy = this.cy, st = this.cyState;
-    if (st.lying || st.stun > 0 || this.cy.blind && st.mode === 'script') return;
+    if (st.lying || st.stun > 0 || (!force && this.cy.blind && st.mode === 'script')) return;
     st.hurt = 1.6;
     cy.hurt = 1;
     const mark = this._lastWound?.mark;
@@ -1550,7 +1638,7 @@ export class Game {
     if (busy(side)) side = side === 'R' ? 'L' : 'R';
     if (busy(side)) return;
     const ik = (cy.ik[side] = { target: mark.getWorldPosition(new THREE.Vector3()), w: 0 });
-    const dur = 2.2;
+    const dur = holdDur;
     for (let t = 0; t < dur; t += 1 / 30) {
       await this.wait(1 / 30);
       if (cy.ik[side] !== ik) return; // something else took the arm (a grab): let it
@@ -1571,14 +1659,13 @@ export class Game {
     { const it = this.pickups.nearest(P.pos); if (it) { prompt = this.pickups.prompt(it); if (I.pressed('KeyE')) this.pickups.take(it); } }
     const pp = P.pos;
     const log = W.interact.find((i) => i.id === 'log');
-    if (log.enabled && !P.carrying && log.obj.visible && pp.distanceTo(log.obj.position) < 4) {
-      prompt = '[E] Pull the burning brand from the fire';
-      if (I.pressed('KeyE')) {
-        P.setCarry(log.obj); log.obj.visible = false; this.stakeHeat = 1; this.carryMeshGlow = -1;
-        this.setPhase('stakeHot'); this.say('It\'s burning. Wake that eye, then put it out', 3, 'Odysseus');
-      }
+    if (log.enabled && !P.carrying && !this._picking && log.obj.visible && pp.distanceTo(log.obj.position) < (this._brandOnFloor ? 2.5 : 4)) {
+      prompt = this._brandOnFloor ? '[E] Pick up the torch' : '[E] Take the burning torch from the fire';
+      if (I.pressed('KeyE') && !this._picking) { if (this._brandOnFloor) takeBrand(this); else pickUpBrand(this); }
     }
-    if (P.carrying && this.stakeHeat < 1 && pp.distanceTo(W.firePos) < 3.2) {
+    // Q (or picking a weapon) puts the torch down, still burning
+    else if (P.carrying && !this._striking && !P.locked && (I.pressed('KeyQ') || I.pressed('Digit1') || I.pressed('Digit2') || I.pressed('Digit3'))) dropBrand(this);
+    if (P.carrying && this.stakeHeat < 1 && pp.distanceTo(W.firePos) < 3.2 && (this.phase === 'sleep' || this.phase === 'stakeHot')) {
       prompt = `[Hold E] Harden the stake\'s point in the fire<div class="bar"><div style="width:${Math.round(this.stakeHeat * 100)}%"></div></div>`;
       if (holdE) {
         this.stakeHeat = Math.min(1, this.stakeHeat + this.dt / 4.5);
@@ -1587,12 +1674,8 @@ export class Game {
         if (this.stakeHeat >= 1) { this.audio.sizzle(false); this.setPhase('stakeHot'); this.say('The tip is glowing red. Now', 3, 'Odysseus'); }
       } else this.audio.sizzle(false);
     }
-    if (P.carrying && this.carryMeshGlow !== this.stakeHeat) {
-      this.carryMeshGlow = this.stakeHeat;
-      P.carryMesh?.traverse((o) => { if (o.isMesh) { o.material.emissive = new THREE.Color(0xff3a00); o.material.emissiveIntensity = this.stakeHeat * 1.5; } });
-    }
     if (P.carrying && this.stakeHeat > 0) {
-      this.camera.localToWorld(this.stakeGlow.position.set(0.3, -0.3, -2.4));
+      brandTipWorld(this, this.stakeGlow.position);
       this.stakeGlow.intensity = 6 * this.stakeHeat * (0.8 + Math.random() * 0.2);
     }
     if (P.carrying && this.stakeHeat >= 1 && (this.cyState.mode === 'sleep' || this.cyState.mode === 'dazed') && !this._striking) {
@@ -1623,6 +1706,7 @@ export class Game {
       if (s.cower && updateCower(this, s, dt)) continue;
       s.mixer.update(dt);
       if (s.state === 'grabbed') continue;
+      if (s.state === 'flung' && updateFlung(this, s, dt)) continue; // swatted: flying / smashed against the rock
       const r = s.root;
       let target = null, speed = 1.2, anim = 'idle';
       if (s.state === 'fight') { const f = squadStep(this, s, dt); target = f.target; speed = f.speed || speed; anim = f.anim; }
@@ -1712,19 +1796,33 @@ export class Game {
     const P = this.player, cp = this.cy.root.position;
     if (this.phase !== 'gate' || P.dead) return;
     const d = flat(P.pos).distanceTo(flat(cp));
-    const nearSheep = this.flock.nearest(P.pos, 3.5);
-    if (d < 6.5) {
-      const ok = P.disguised && P.crouch && P.noise < 0.3 && nearSheep;
-      if (!ok && !this._gateGrab) {
+    // any sheep within 5 m counts, including ones that have just gone through the gap
+    // (the flock walks faster than a crawling man, so the strict 3.5 m used to lose you mid-tunnel)
+    const nearSheep = this.flock.sheep.some((s) => s.pos.distanceTo(P.pos) < 5);
+    const st = this.cyState;
+    if (st.downed) { this._gateBad = 0; /* rolling on the floor clutching his backside: he feels nothing */ }
+    else if (st.weak ? d < 3.5 : d < 6.5) {
+      // weakened: his hand is slow and clumsy, the straw alone fools him.
+      // crouch or prone both count; only running or jumping is loud (slopes that lift you off the floor for a frame do not count)
+      const loud = P.noise >= 0.5;
+      const why = !P.disguised ? 'His fingers knew you were no sheep.' : st.weak ? null
+        : !P.crouch ? 'Standing upright, you looked nothing like a sheep.'
+        : loud ? 'He heard a man\'s footsteps, not hooves.'
+        : !nearSheep ? 'You strayed too far from the flock.' : null;
+      // a slip has to last a moment before his hand closes (a warning first), except with no straw at all
+      this._gateBad = why ? (this._gateBad || 0) + this.dt : 0;
+      if (why && P.disguised && this._gateBad < 0.9) {
+        if (!this._gateWarnT || this.time > this._gateWarnT) { this._gateWarnT = this.time + 2; this.say(!P.crouch ? 'Get down!' : loud ? 'Quiet!' : 'Stay with the sheep!', 1.2, 'Eurylochus'); }
+      } else if (why && !this._gateGrab) {
         this._gateGrab = true;
-        this.caughtPlayer(!P.disguised ? 'His fingers knew you were no sheep.' : !P.crouch ? 'Standing upright, you looked nothing like a sheep.' : 'You strayed too far from the flock.');
-      } else if (ok && Math.random() < this.dt * 0.8) {
+        this.caughtPlayer(why);
+      } else if (!why && Math.random() < this.dt * 0.8) {
         // his hand pats your back… hold still
         this.cy.ik.L = { target: P.pos.clone().add(V(0, 1.0, 0)), w: 0.8 };
         this.player.shake = 0.3;
         setTimeout(() => (this.cy.ik.L = null), 900);
       }
-    }
+    } else this._gateBad = 0;
     if (P.pos.z > this.world.doorClosed.z + 4.5 && !this.escaping) { this.escaping = true; this.runEscape(); }
   }
 
@@ -1768,17 +1866,12 @@ export class Game {
     if (st.mode === 'dazed') { st.mode = 'sleep'; this.wakeUp(); } // too slow: he comes round
   }
 
-  // second blow: the burning point goes into the open eye
+  // second blow: the burning point goes into the open eye (slow-motion close-up, brand.js)
   async stabEye() {
     if (this._striking) return; this._striking = true;
-    const P = this.player, eye = this.cy.eyeWorld();
     this.cyState.mode = 'script';
-    P.locked = true;
-    const side = V(-Math.sin(P.yaw), 0, -Math.cos(P.yaw));
-    this.camOverride = eye.clone().addScaledVector(side, -3.4).add(V(0.8, 1.8, 0)); this.camTarget = eye.clone();
-    this.slowPunch = 2.2;
-    await this.wait(0.35);
-    this.slowPunch = 0; this.camOverride = null; this.camTarget = null; P.locked = false; this._striking = false;
+    await stabEyeCine(this);
+    this._striking = false;
     this.haptic([60, 40, 160]);
     this.blindCyclops();
   }
@@ -1830,9 +1923,9 @@ export class Game {
       (P.aim > 0.5 || P.drawing) && P.stamina > 0 && !P.exhausted;
     P.bulletTime = want;
     this.slowPunch = Math.max(0, (this.slowPunch || 0) - dtReal);
-    const target = this.slowPunch > 0 ? (this.slowPunch > 1 ? 0.3 : 0.08) : this.wheel?.open ? 0.15 : want ? 0.2 : 1;
+    const target = this.cineSlow ? this.cineSlow : this.swatSlow ? SWAT_SLOW : this.slowPunch > 0 ? (this.slowPunch > 1 ? 0.3 : 0.08) : this.wheel?.open ? 0.15 : want ? 0.2 : 1;
     // ease into slow motion quickly, out of it a bit slower
-    const k = Math.min(1, dtReal * (want ? 10 : 5));
+    const k = Math.min(1, dtReal * (this.cineSlow ? 14 : want || this.swatSlow ? 10 : 5));
     this.timeScale = THREE.MathUtils.lerp(this.timeScale ?? 1, target, k);
     if (Math.abs(this.timeScale - 1) < 0.01) this.timeScale = 1;
     const slow = 1 - (this.timeScale - 0.2) / 0.8;   // 0..1
@@ -1913,7 +2006,8 @@ export class Game {
       const d = cyOn ? flat(this.cy.root.position).distanceTo(flat(this.player.pos)) : 99;
       this.player.giantNear = 1 - THREE.MathUtils.smoothstep(d, 7, 18); }
     this.player.update(dt, t, dtReal);
-    if (this.camOverride) { this.camera.position.copy(this.camOverride); this.camera.lookAt(this.camTarget); }
+    if (this.swatCam && updateSwatCam(this, dtReal)) { /* the swat shot owns the camera */ }
+    else if (this.camOverride) { this.camera.position.copy(this.camOverride); this.camera.lookAt(this.camTarget); }
     else this.updateEatCam(dt);
     this.radar.update(dtReal);
     this.meter.update(dtReal);
@@ -1940,6 +2034,8 @@ export class Game {
     }
     this.doorShut = this.world.boulder.position.distanceTo(this.world.doorClosed) < 2;
     this.updateSoldiers(dt, t);
+    if (this.cy.root.visible) this.giantBodyBlock();
+    this.updateTorchLight(t);
     crewChatter(this, dt);
     this.flock.update(dt, t, { player: this.player, cyclops: this.cy, nav: this.nav.man });
     this.frameNo = (this.frameNo || 0) + 1;
@@ -1957,7 +2053,7 @@ export class Game {
     const fl = this.post.grade.uniforms.get('uFlash'); fl.value = Math.max(0, fl.value - dt * 0.6);
     // HUD
     const P = this.player;
-    this.hud.weapon.innerHTML = P.carrying ? '<b>STAKE</b>' : P.weapon === 'bow' ? `<b>BOW</b>  arrows ${P.arrows}` : P.weapon === 'stone' ? `<b>STONE</b>  ${P.stones}` : `<b>SPEAR</b>  ${P.spears}`;
+    this.hud.weapon.innerHTML = P.carrying ? '<b>TORCH</b>  [Q] put down' : P.weapon === 'bow' ? `<b>BOW</b>  arrows ∞` : P.weapon === 'stone' ? `<b>STONE</b>  ${P.stones}` : `<b>SPEAR</b>  ${P.spears}`;
     this.hud.status.innerHTML = `<div class="hp"><div style="width:${Math.max(0, P.hp)}%"></div></div>Men ${this.soldiers.filter((s) => s.alive).length} / 12${P.disguised ? '<br>Wearing straw' : ''}${P.prone ? '<br>Prone' : P.crouch ? '<br>Crouching' : ''}${P.climbing ? '<br>Climbing' : ''}`;
     this.hud.cross.classList.toggle('aim', P.aim > 0.5 || P.drawing);
     this.hud.cross.style.setProperty('--draw', P.draw.toFixed(3));

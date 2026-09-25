@@ -25,6 +25,7 @@ ORDERS = {
 ACK = ["YES!!", "Go, go, GO!!", "With you!!", "TOGETHER!!", "For ITHACA!!", "Hyaaah!!"]
 ACK_STYLE = ("An adult man with a deep, rough chest voice, a soldier SCREAMING a battle cry at the top of his lungs in reply to his commander. "
              "EMOTION 10 out of 10, MAXIMUM: adrenaline and terror, voice tearing. Never speaking normally, never high-pitched.")
+SPECIAL_ACK = {"maniac": ["HAHAHAHA!! YES!!", "HAHAHA!! <laugh> Let's GO!!"], "zealot": ["For ZEUS!! For ZEUS!!", "The gods are WITH us!!"]}
 LEADERS = ["crewC", "crewD", "odysseus"]
 
 
@@ -45,10 +46,14 @@ def main():
                 jobs.append((name, t, COMMAND, v))
                 orders[o].append({"f": name + ".mp3", "v": v, "t": t})
     ack = []
-    for k, v in enumerate(cv.CREW + cv.CREW[:3]):
+    for k, v in enumerate(cv.BASE_CREW + cv.BASE_CREW[:3]):
         t = ACK[k % len(ACK)]
         name = f"ack_{k:02d}_{v}"
         jobs.append((name, t, ACK_STYLE, v)); ack.append({"f": name + ".mp3", "v": cv.CREW.index(v), "t": t})
+    for v, lines in SPECIAL_ACK.items():  # the laughing madman and the shrieking zealot answer in character
+        for k, t in enumerate(lines):
+            name = f"ack_{v}_{k}"
+            jobs.append((name, t, cv.SPECIAL[v]["voice"], v)); ack.append({"f": name + ".mp3", "v": cv.CREW.index(v), "t": t})
     print(len(jobs), "takes", flush=True)
     bad = set()
     with cf.ThreadPoolExecutor(6) as ex:

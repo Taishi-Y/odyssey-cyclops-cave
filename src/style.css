@@ -236,3 +236,11 @@ body.touch #howto { margin-top: 6px; }
   body.touch #rotate .ico { font-size: 54px; margin-bottom: 18px; animation: rot 2s ease-in-out infinite; }
 }
 @keyframes rot { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+label.volume { display: flex; align-items: center; gap: 12px; font: 700 11px -apple-system, sans-serif; letter-spacing: 0.2em; color: #b89a6a; cursor: pointer; }
+label.volume input { width: 180px; accent-color: #ffae5a; cursor: pointer; }
+label.volume .val { width: 28px; text-align: right; color: #e8dcc6; font-weight: 400; letter-spacing: 0; }
+#menu label.volume { margin-top: 18px; }
+#help label.volume { padding: 0 18px 10px; }
+#voltoast { position: fixed; top: 18%; left: 50%; transform: translateX(-50%); z-index: 10; padding: 8px 18px; background: rgba(14,10,7,0.8); border: 1px solid rgba(232,220,198,0.25); color: #e8dcc6; font: 700 12px -apple-system, sans-serif; letter-spacing: 0.25em; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+#voltoast.on { opacity: 1; }

@@ -12,12 +12,14 @@ const CONTROLS = [
   ['Interact / pick up / eat', 'E (hold E for "hold" actions)', 'E'],
   ['Weapons', '1 bow / 2 spear / 3 stones', 'WEAPON'],
   ['Weapon wheel (time slows)', 'Tab (hold)', 'WHEEL'],
+  ['Put the torch down (E picks it up again)', 'Q (or 1 / 2 / 3)', 'WEAPON'],
   ['Knock on a wall (lure the giant)', 'F', 'KNOCK'],
   ['Switch to a crewman', 'X', 'SWITCH'],
   ['Order the crew: all attack / scatter', 'G / R', ''],
   ['Camera (3rd / 1st person)', 'V', 'CAM'],
   ['Photo mode', 'P', 'PHOTO'],
   ['Help (this screen)', 'H or F1', '?'],
+  ['Volume', '- / = to change, M to mute (or the slider above)', 'Slider above'],
 ];
 
 const ACTIONS = [

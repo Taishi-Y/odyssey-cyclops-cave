@@ -11,7 +11,8 @@ Open http://127.0.0.1:5188/ (Chrome recommended). Add `?q=low` if it runs slowly
 - WASD or Arrow keys walk / Shift run (sprint) / Ctrl or C crouch / Space jump
 - Left click: hold to draw the bow, release to shoot (spear: throw)
 - Right click: aim
-- 1 bow / 2 spear / E interact (log, harden the stake, blind the giant, tie on straw, pick up arrows)
+- 1 bow / 2 spear / E interact (take the torch, blind the giant, tie on straw, pick up arrows)
+- A burning torch always rests in the fire. Carry it (E) to light up the cave walls; Q (or 1/2/3) puts it down, still burning
 - Jump (Space) and aim the bow in mid-air: slow motion like Breath of the Wild. Drains the green stamina wheel (sprinting drains it too)
 - Tab (hold): GTA-style weapon wheel, time slows while it is open (bow / spear / stones)
 - Z: prone (Metal Gear style crawl, almost invisible in the dark)
@@ -46,5 +47,7 @@ Checkpoints: `?phase=night|sleep|blind|gate`
 - Player / crew locomotion (walk, jog, sprint, crouch, jump): Universal Animation Library by Quaternius (CC0, https://quaternius.itch.io/universal-animation-library), retargeted with hip bob (work/anim/ual_extract.py)
 - Campfire logs: "Campfire Wood Survival Warm and Light" (https://sketchfab.com/3d-models/campfire-wood-survival-warm-and-light-efd0ac8c5cca46bfaae91b3851b9c75f) by digrafstudio (https://sketchfab.com/digrafstudio), CC-BY 4.0. Converted to metal/rough
 - Cheese sacks: "Sack_v2" (https://sketchfab.com/3d-models/sack-v2-74f60f70effb486faf645519b3dae1a9) by TheDrone (https://sketchfab.com/thedrone), CC-BY 4.0
+- Burning brand: "Torch stick" (https://sketchfab.com/3d-models/torch-stick-d8eadee1a5c14483aade99b1fe5bc150) by DJMaesen (https://sketchfab.com/bumstrum), CC-BY 4.0
+- The giant lying down / getting up: "LayToIdle" from Universal Animation Library 2 by Quaternius (CC0, https://quaternius.itch.io/universal-animation-library-2), retargeted (work/anim/ual2_extract.py)
 - Flames: our own Blender Mantaflow sim baked into a flipbook (work/firesim/sim.py, atlas.py)
 - Cave, sheep, fire and other sounds are generated in code

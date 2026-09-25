@@ -7,11 +7,21 @@ export class Audio {
   constructor() {
     this.ctx = null;
     this.listener = null;
+    const saved = parseFloat(localStorage.getItem('odyssey.volume'));
+    this.volume = Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 0.6; // master volume 0..1 (user setting)
+  }
+  // perceptual curve: slider 0..1 -> master gain (squared), 1.0 = the original full level
+  masterGain() { return 0.9 * this.volume * this.volume; }
+  setVolume(v) {
+    this.volume = Math.min(1, Math.max(0, v));
+    try { localStorage.setItem('odyssey.volume', String(this.volume)); } catch {}
+    if (this.master) this.master.gain.setTargetAtTime(this.masterGain(), this.ctx.currentTime, 0.03);
+    this.onVolume?.(this.volume);
   }
   init() {
     if (this.ctx) return;
     const ctx = (this.ctx = new (window.AudioContext || window.webkitAudioContext)());
-    this.master = ctx.createGain(); this.master.gain.value = 0.9;
+    this.master = ctx.createGain(); this.master.gain.value = this.masterGain();
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
     this.master.connect(comp).connect(ctx.destination);
     // big stone-room reverb

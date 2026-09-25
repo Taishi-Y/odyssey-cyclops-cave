@@ -321,8 +321,8 @@ export async function buildWorld(scene, renderer, onProgress) {
   onProgress?.(0.7);
 
   // ---------------- Props ----------------
-  const [pit, trunk, bucket, basket, stump, rockA, rockB, b2, b4, b5, bowl] = await Promise.all(
-    ['stone_fire_pit', 'dead_tree_trunk', 'wooden_bucket_01', 'wicker_basket_01', 'tree_stump_01', 'rock_face_01', 'rock_face_02', 'namaqualand_boulder_02', 'namaqualand_boulder_04', 'namaqualand_boulder_05', 'wooden_bowl_01'].map(loadModel)
+  const [pit, bucket, basket, stump, rockA, rockB, b2, b4, b5, bowl] = await Promise.all(
+    ['stone_fire_pit', 'wooden_bucket_01', 'wicker_basket_01', 'tree_stump_01', 'rock_face_01', 'rock_face_02', 'namaqualand_boulder_02', 'namaqualand_boulder_04', 'namaqualand_boulder_05', 'wooden_bowl_01'].map(loadModel)
   );
   onProgress?.(0.85);
 
@@ -396,19 +396,38 @@ export async function buildWorld(scene, renderer, onProgress) {
   scene.add(logs);
   W.fireLogs = logs;
 
-  // the olive-wood club/log that becomes the stake
-  prepModel(trunk);
-  const tb = new THREE.Box3().setFromObject(trunk);
-  const tlen = Math.max(tb.max.x - tb.min.x, tb.max.y - tb.min.y, tb.max.z - tb.min.z);
-  trunk.scale.multiplyScalar(7 / tlen);
+  // the burning brand: a real torch ("Torch stick" by DJMaesen, CC-BY), a crooked branch with a pitch-soaked rag head.
+  // baked so the grip end sits at the origin and the head points along +Z; W.torchLen long
+  const torchSrc = await new Promise((res, rej) => gltf.load('assets/models/torch_stick/torch_stick.glb', (g) => res(g.scene), undefined, rej));
+  torchSrc.updateMatrixWorld(true);
+  let tMesh = null; torchSrc.traverse((o) => { if (o.isMesh && !tMesh) tMesh = o; });
+  const tGeo = tMesh.geometry.clone().applyMatrix4(tMesh.matrixWorld);
+  tGeo.computeBoundingBox();
+  { // long axis -> +Z, head (the far end) at +Z
+    const sz = tGeo.boundingBox.getSize(new THREE.Vector3());
+    if (sz.y >= sz.x && sz.y >= sz.z) tGeo.rotateX(Math.PI / 2); else if (sz.x >= sz.z) tGeo.rotateY(-Math.PI / 2);
+    tGeo.computeBoundingBox();
+    const bb = tGeo.boundingBox, len = bb.max.z - bb.min.z, P = tGeo.attributes.position;
+    // centre the shaft on the axis at the grip end (the branch is crooked)
+    let cx = 0, cy = 0, n = 0;
+    for (let k = 0; k < P.count; k++) if (P.getZ(k) < bb.min.z + len * 0.25) { cx += P.getX(k); cy += P.getY(k); n++; }
+    tGeo.translate(-cx / Math.max(1, n), -cy / Math.max(1, n), -bb.min.z);
+    W.torchLen = 2.1;
+    tGeo.scale(W.torchLen / len, W.torchLen / len, W.torchLen / len);
+    tGeo.computeBoundingSphere();
+  }
+  const tMat = tMesh.material;
+  tMat.emissiveIntensity = 2.4; // the embers in the rag glow through the bloom
+  if (tMat.map) tMat.map.anisotropy = 8;
+  const torch = new THREE.Mesh(tGeo, tMat);
+  torch.castShadow = true; torch.receiveShadow = true;
   const stakeRoot = new THREE.Group();
-  stakeRoot.add(trunk);
-  // lay it along the floor
-  const tb2 = new THREE.Box3().setFromObject(trunk);
-  if (tb2.max.y - tb2.min.y > tb2.max.x - tb2.min.x) trunk.rotation.z = Math.PI / 2;
-  stakeRoot.position.set(9, floorHeightAt(9, 5) + 0.3, 5);
+  stakeRoot.add(torch);
+  stakeRoot.position.set(9, floorHeightAt(9, 5) + 0.05, 5);
   stakeRoot.rotation.y = 0.9;
+  stakeRoot.visible = false; // laid in the fire when the giant sleeps (Game.placeBrand)
   scene.add(stakeRoot);
+  stakeRoot.userData.len = W.torchLen;
   W.stakeLog = stakeRoot;
   W.interact.push({ id: 'log', obj: stakeRoot, pos: stakeRoot.position.clone(), radius: 4 });
 

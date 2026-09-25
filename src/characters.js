@@ -48,7 +48,26 @@ export async function loadCharacterAssets() {
   }
   // the giant gets the mocap pushing loop for the door-stone scene
   CYC.clips.push(...retargetClips(SkeletonUtils.clone(ualRoot), ualClips.filter((c) => c.name === 'm_push'), SkeletonUtils.clone(CYC.scene), 30, { hipsMotion: true, chain: true }));
+  // lying down / getting up: mocap 'LayToIdle' from Quaternius' Universal Animation Library 2 (CC0, work/anim/ual2_extract.py).
+  // Played backwards he crouches, puts a hand down, sits and lies back; forwards he gets up again
+  const ual2 = await loader.loadAsync('assets/anim/ual2_lay.glb');
+  const u2Root = ual2.scene;
+  u2Root.traverse((o) => { if (o.isBone && UAL2_BONES[o.name]) o.name = 'mixamorig' + UAL2_BONES[o.name]; });
+  const lay = ual2.animations.find((a) => a.name === 'LayToIdle').clone();
+  lay.name = 'lay';
+  // bone rotations of the mapped bones, plus the root / pelvis translation (turned into the scaled hips motion)
+  lay.tracks = lay.tracks.filter((t) => { const [b, p] = t.name.split('.'); return (UAL2_BONES[b] && (p === 'quaternion' || (p === 'position' && b === 'pelvis'))) || (b === 'root' && p !== 'scale'); });
+  for (const t of lay.tracks) { const [b, p] = t.name.split('.'); if (UAL2_BONES[b]) t.name = `mixamorig${UAL2_BONES[b]}.${p}`; }
+  CYC.clips.push(...retargetClips(SkeletonUtils.clone(u2Root), [lay], SkeletonUtils.clone(CYC.scene), 30, { hipsMotion: true, chain: true }));
 }
+// UAL2 (Unreal mannequin names) -> Mixamo bone names
+const UAL2_BONES = {
+  pelvis: 'Hips', spine_01: 'Spine', spine_02: 'Spine1', spine_03: 'Spine2', neck_01: 'Neck', Head: 'Head',
+  clavicle_l: 'LeftShoulder', upperarm_l: 'LeftArm', lowerarm_l: 'LeftForeArm', hand_l: 'LeftHand',
+  clavicle_r: 'RightShoulder', upperarm_r: 'RightArm', lowerarm_r: 'RightForeArm', hand_r: 'RightHand',
+  thigh_l: 'LeftUpLeg', calf_l: 'LeftLeg', foot_l: 'LeftFoot', ball_l: 'LeftToeBase',
+  thigh_r: 'RightUpLeg', calf_r: 'RightLeg', foot_r: 'RightFoot', ball_r: 'RightToeBase',
+};
 // UAL (Rigify DEF-*) -> Mixamo bone names, after GLTFLoader's node-name sanitising (dots removed)
 const UAL_BONES = {
   'DEF-hips': 'Hips', 'DEF-spine001': 'Spine', 'DEF-spine002': 'Spine1', 'DEF-spine003': 'Spine2', 'DEF-neck': 'Neck', 'DEF-head': 'Head',
@@ -177,7 +196,7 @@ export class Cyclops {
     this.lThumb = [1, 2, 3].map((i) => byName(`LeftHandThumb${i}`)).filter(Boolean);
     this.gripL = 0;
     this.grip = 0; this.bite = 0; this.chew = 0;
-    // warm under-light, as if the fire were bouncing up onto his face
+    // warm under-light, as if the fire were bouncing up onto his face 
     this.faceLight = new THREE.SpotLight(0xff8a44, 420, height * 0.6, 0.38, 0.7, 2);
     this.faceLight.position.set(0, height * 0.6, height * 0.42);
     this.faceTarget = new THREE.Object3D(); this.faceTarget.position.set(0, height * 0.9, 0);
@@ -209,6 +228,10 @@ export class Cyclops {
       zone('body', this.bones.Spine1, 0.17, 3), zone('body', this.bones.Spine2, 0.16, 3), zone('body', this.bones.Hips, 0.16, 3),
       zone('arm', this.bones.RightForeArm, 0.06, 2), zone('arm', this.bones.LeftForeArm, 0.06, 2),
       zone('arm', this.bones.RightArm, 0.06, 2), zone('arm', this.bones.LeftArm, 0.06, 2),
+      // the joints alone leave gaps along the limb: fill the upper arm and forearm with spheres so an arrow through the middle of the arm counts
+      ...[[this.bones.RightArm, this.bones.RightForeArm], [this.bones.RightForeArm, this.bones.RightHand],
+        [this.bones.LeftArm, this.bones.LeftForeArm], [this.bones.LeftForeArm, this.bones.LeftHand]]
+        .filter(([a, b]) => a && b).flatMap(([a, b]) => [0.33, 0.67].map((f) => zone('arm', a, 0.06, 2, b.position.clone().multiplyScalar(f)))),
       // the fists: generous, since a man held in the right one is the thing you are shooting at
       zone('hand', this.bones.RightHand, 0.12, 2), zone('hand', this.bones.LeftHand, 0.1, 2),
       zone('leg', this.bones.LeftLeg, 0.07, 2), zone('leg', this.bones.RightLeg, 0.07, 2), zone('leg', this.bones.LeftUpLeg, 0.08, 2), zone('leg', this.bones.RightUpLeg, 0.08, 2),
@@ -227,7 +250,40 @@ export class Cyclops {
     if (this.current) this.current.fadeOut(fade);
     this.current = a;
   }
+  // a one-shot clip (optionally backwards) that holds its last frame, e.g. 'lay' reversed = lying down
+  playClip(name, { fade = 0.5, speed = 1, reverse = false, from = null } = {}) {
+    const a = this.actions[name]; if (!a) return null;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true;
+    a.timeScale = reverse ? -speed : speed;
+    a.time = from ?? (reverse ? a.getClip().duration : 0);
+    a.setEffectiveWeight(1).fadeIn(fade).play();
+    if (this.current && this.current !== a) this.current.fadeOut(fade);
+    this.current = a;
+    return a;
+  }
+  // where his eye, head, hips and feet end up (in root space) once he has lain down: the first frame of 'lay'
+  lyingPose() {
+    if (this._lying) return this._lying;
+    const a = this.actions.lay, cur = this.current, r = this.root;
+    const saved = { p: r.position.clone(), q: r.quaternion.clone() };
+    r.position.set(0, 0, 0); r.quaternion.identity();
+    const running = this.mixer._actions.filter((x) => x.isRunning());
+    for (const x of running) x.enabled = false;
+    a.reset(); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.timeScale = 0; a.setEffectiveWeight(1).play(); a.time = 0;
+    this.mixer.update(0);
+    r.updateMatrixWorld(true);
+    const L = (o) => r.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+    this._lying = { eye: L(this.eyeGroup), head: L(this.bones.Head), hips: L(this.bones.Hips), lFoot: L(this.bones.LeftFoot), rFoot: L(this.bones.RightFoot) };
+    a.stop();
+    for (const x of running) x.enabled = true;
+    this.current = cur;
+    r.position.copy(saved.p); r.quaternion.copy(saved.q);
+    this.mixer.update(0); r.updateMatrixWorld(true);
+    return this._lying;
+  }
   eyeWorld(v = new THREE.Vector3()) { return this.eyeGroup.getWorldPosition(v); }
+  // the way the eye looks (out of the face)
+  eyeDir(v = new THREE.Vector3()) { return v.set(0, 0, 1).applyQuaternion(this.eyeGroup.getWorldQuaternion(new THREE.Quaternion())).normalize(); }
   mouthWorld(v = new THREE.Vector3()) { return this.eyeGroup.localToWorld(v.set(0, -0.145, -0.01)); }
   handWorld(side = 'R', v = new THREE.Vector3()) { return (side === 'R' ? this.bones.RightHand : this.bones.LeftHand).getWorldPosition(v); }
   // first point where a ray meets his (skinned, posed) skin, or null
@@ -317,7 +373,7 @@ export class Cyclops {
     let want = Math.max(this.forceSquat || 0, (this.crouch || 0) * (this.crouchDepth || 1.3)); // crouch: ducking through the low entrance tunnel
     for (const k of ['R', 'L']) { const ik = this.ik[k]; if (ik && ik.w > 0.05 && !ik.noSquat) { const ly = ik.target.y - this.root.position.y; want = Math.max(want, THREE.MathUtils.clamp((7.5 - ly) / 7.5, 0, 1) * ik.w); } }
     this.squat += (want - this.squat) * Math.min(1, dt * (want > this.squat && this.forceSquat ? this.squatRate || 2.5 : 2.5));
-    if (this.squat > 0.01) { this.poser.squatBend(this.squat * 0.85, this.squat, this.squatSign || 1); this.model.position.y = -this.squat * this.height * 0.22; }
+    if (this.squat > 0.01) { this.poser.squatBend(this.squat * 0.85, this.squat, this.squatSign || 1); this.model.position.y = this.lying ? 0 : -this.squat * this.height * 0.22; } // on his back the knees just kick, the body stays on the floor
     else this.model.position.y = 0;
     // sitting on the ground (idle fidget): thighs forward, legs out, pelvis down on the floor, a slight lean back
     this.sitW = (this.sitW || 0) + ((this.sitTarget || 0) - (this.sitW || 0)) * Math.min(1, dt * 1.1);
@@ -336,6 +392,22 @@ export class Cyclops {
     this.model.updateMatrixWorld(true);
     // lying asleep: chin lifted off the chest so the face (and the eye) stays turned out
     if (this.headLift) { this.poser.frame(); rotWorld(this.bones.Neck, this.poser.right, -this.headLift * 0.45); rotWorld(this.bones.Head, this.poser.right, -this.headLift * 0.55); this.model.updateMatrixWorld(true); }
+    // lying on his back: the thick neck bent aside, face (and eye) rolled toward faceTurn.target (the fire).
+    // turns the neck and head about the neck's own axis, which the upright look() can't do for a body on the floor
+    if (this.faceTurn && this.faceTurn.w > 0.001) {
+      const P = (o) => o.getWorldPosition(new THREE.Vector3());
+      const axis = P(this.bones.Head).sub(P(this.bones.Neck)).normalize();
+      const d = this.eyeDir(), t = this.faceTurn.target.clone().sub(this.eyeWorld());
+      d.addScaledVector(axis, -d.dot(axis)); t.addScaledVector(axis, -t.dot(axis));
+      if (d.lengthSq() > 1e-6 && t.lengthSq() > 1e-6) {
+        d.normalize(); t.normalize();
+        let a = Math.acos(THREE.MathUtils.clamp(d.dot(t), -1, 1));
+        if (d.clone().cross(t).dot(axis) < 0) a = -a;
+        a = THREE.MathUtils.clamp(a, -1.45, 1.45) * this.faceTurn.w;
+        rotWorld(this.bones.Neck, axis, a * 0.45); rotWorld(this.bones.Head, axis, a * 0.55);
+        this.model.updateMatrixWorld(true);
+      }
+    }
     if (this.lookAt) this.poser.look(this.lookAt, 0.8);
     // eating: neck/head lunge down toward the hand (bite) plus a small chewing bob
     if (this.bite || this.chew) {
@@ -377,7 +449,8 @@ export class Cyclops {
       rotWorld(this.bones.Head, R, (0.3 + Math.sin(this._rt * 17) * 0.05) * w);
       this.model.updateMatrixWorld(true);
     }
-    this.poser.armsClear({ R: this.ik.R && this.ik.R.w > 0.6, L: this.ik.L && this.ik.L.w > 0.6 });
+    // (the keep-clear push assumes he is upright: on his back it shoved the arms up and made them jitter)
+    if (!this.lying) this.poser.armsClear({ R: this.ik.R && this.ik.R.w > 0.6, L: this.ik.L && this.ik.L.w > 0.6 });
     // ik.free: the hand may touch his own body (scratching, nose picking), skip the keep-clear push
     for (const sd of ['R', 'L']) {
       const ik = this.ik[sd]; if (!ik) continue;
@@ -385,6 +458,8 @@ export class Cyclops {
       this.poser.reach(sd, ik.target, ik.w);
       this.poser.collide = col;
     }
+    // asleep on his back: hands under the back of his head, elbows out (arm pillow)
+    if (this.lying && (this.pillow || 0) > 0.001) this.armPillow(this.pillow);
     // ducking: tuck the hands in onto the knees so the arms don't scrape the tunnel walls
     if ((this.crouch || 0) > 0.02) {
       const r = this.root, f = new THREE.Vector3(Math.sin(r.rotation.y), 0, Math.cos(r.rotation.y)), rt = new THREE.Vector3(f.z, 0, -f.x);
@@ -425,6 +500,53 @@ export class Cyclops {
     this.lid.scale.x = this.E.r * 1.08 * Math.max(0.05, closed);
     this.root.updateMatrixWorld(true);
     this.updateZones();
+  }
+
+  // both hands tucked under the back of the skull, fingers toward each other, elbows spread out to the sides
+  armPillow(w) {
+    const P = (o) => o.getWorldPosition(new THREE.Vector3());
+    const H = this.height, floorY = this.root.position.y;
+    this.poser.frame();
+    const head = P(this.bones.Head), neck = P(this.bones.Neck);
+    const along = head.clone().sub(neck); along.y = 0; along.normalize();          // toward the top of his head
+    const left = this.poser.right.clone(); left.addScaledVector(along, -left.dot(along)); left.y = 0; left.normalize(); // his left
+    for (const [side, sg] of [['R', -1], ['L', 1]]) {
+      if (this.ik[side] && this.ik[side].w > 0.05) continue;
+      const lat = left.clone().multiplyScalar(sg);
+      const target = head.clone().addScaledVector(along, 0.035 * H).addScaledVector(lat, 0.03 * H);
+      target.y = floorY + 0.035 * H;
+      const pole = lat.clone().addScaledVector(along, 0.5).add(new THREE.Vector3(0, 0.45, 0));
+      const hand = side === 'R' ? this.bones.RightHand : this.bones.LeftHand;
+      this.twoBoneIK(side, P(hand).lerp(target, w), pole);
+      this.aimHand(side, lat.clone().negate().addScaledVector(along, 0.3).normalize(), new THREE.Vector3(0, 1, 0), w);
+    }
+    this.model.updateMatrixWorld(true);
+  }
+  // analytic shoulder-elbow-wrist IK: the elbow bends toward `pole`. Deterministic, so a held pose stays still
+  twoBoneIK(side, target, pole) {
+    const R = side === 'R';
+    const arm = R ? this.bones.RightArm : this.bones.LeftArm, fore = R ? this.bones.RightForeArm : this.bones.LeftForeArm, hand = R ? this.bones.RightHand : this.bones.LeftHand;
+    if (!arm || !fore || !hand) return;
+    const P = (o) => o.getWorldPosition(new THREE.Vector3());
+    const align = (bone, from, to) => {
+      const a = from.clone().normalize(), b = to.clone().normalize();
+      const ang = Math.acos(THREE.MathUtils.clamp(a.dot(b), -1, 1)); if (ang < 1e-4) return;
+      const axis = a.cross(b); if (axis.lengthSq() < 1e-10) return;
+      rotWorld(bone, axis.normalize(), ang);
+    };
+    const S = P(arm), E0 = P(fore), W0 = P(hand);
+    const la = S.distanceTo(E0), lb = E0.distanceTo(W0);
+    const d = target.clone().sub(S), len = THREE.MathUtils.clamp(d.length(), Math.abs(la - lb) + 1e-3, (la + lb) * 0.999);
+    d.normalize();
+    const x = (la * la - lb * lb + len * len) / (2 * len), h = Math.sqrt(Math.max(0, la * la - x * x));
+    const pp = pole.clone().addScaledVector(d, -pole.dot(d));
+    if (pp.lengthSq() < 1e-8) return; pp.normalize();
+    const E = S.clone().addScaledVector(d, x).addScaledVector(pp, h);
+    align(arm, E0.clone().sub(S), E.clone().sub(S));
+    arm.updateMatrixWorld(true);
+    const E1 = P(fore), W1 = P(hand), T = S.clone().addScaledVector(d, len);
+    align(fore, W1.sub(E1), T.sub(E1));
+    fore.updateMatrixWorld(true);
   }
 
   // turn a hand (after IK placed the wrist) so the fingers point along `fingers` and the palm faces `palm` (world dirs)

@@ -12,6 +12,7 @@ PROMPT = ("You are a strict voice director for a horror game. Listen to this voi
           "Rate his vocal intensity from 1 to 10: 1-3 = normal conversational speaking or calm narration, "
           "4-6 = raised voice / loud talking / tense but controlled, 7-8 = real shouting, "
           "9-10 = all-out screaming at the top of his lungs with maximum emotion (panic, terror, rage), voice straining or cracking. "
+          "Loud, unhinged maniacal laughing and shrill shrieking or frantic screamed praying also count as all-out screaming. "
           "Judge the WHOLE clip: if any sentence is delivered in a normal speaking voice, score it at most 5. "
           'Reply with JSON only: {"intensity": <int>, "calm_parts": "<which words sound like normal talking, or empty>"}')
 

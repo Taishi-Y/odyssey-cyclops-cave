@@ -157,6 +157,7 @@ function hitGiant(G, s, at) {
   s.hitAt = G.time;
   st.cuts = (st.cuts || 0) + 1;
   st.lastCutBy = s;
+  st.anger = Math.min(1.5, (st.anger || 0) + 0.2); // every cut makes him angrier (swat.js)
   if (st.mode === 'tend') { st.alert = Math.min(2, st.alert + 0.35); st.noiseAt = at.clone(); }
   if (Math.random() < 0.3) G.audio.roar(G.cy.eyeWorld(), { dur: 0.9, vol: 0.45, pitch: 1.15, pain: true });
   const d = G.player.pos.distanceTo(at);

@@ -152,7 +152,7 @@ export class WeaponWheel {
     this.g = game;
     const el = document.createElement('div'); el.id = 'wheel';
     this.items = [
-      { id: 'bow', label: 'BOW', sub: () => `${game.player.arrows} arrows`, ang: -90 },
+      { id: 'bow', label: 'BOW', sub: () => '∞ arrows', ang: -90 },
       { id: 'spear', label: 'SPEAR', sub: () => `${game.player.spears}`, ang: 30 },
       { id: 'stone', label: 'STONE', sub: () => `${game.player.stones} · distraction`, ang: 150 },
     ];

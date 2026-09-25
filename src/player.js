@@ -57,6 +57,9 @@ export function makeSpear() {
   return g;
 }
 
+// where the hand holds the torch, as a fraction of its length from the butt
+export const GRIP = 0.24;
+
 export class Player {
   constructor({ camera, scene, physics, audio, input }) {
     Object.assign(this, { camera, scene, physics, audio, input });
@@ -72,6 +75,8 @@ export class Player {
     this.noise = 0; // how loud the player is right now (0..1)
     this.disguised = false; this.carrying = null; this.locked = false;
     this.bob = 0; this.shake = 0; this.recoil = 0;
+    // heavy, slow camera sway from a giant's footfall (damped springs: drop + roll + pitch), see thud()
+    this.qy = 0; this.qvy = 0; this.qr = 0; this.qvr = 0; this.qp = 0; this.qvp = 0;
     this.projectiles = [];
     this.stuck = [];
     // view models
@@ -99,10 +104,13 @@ export class Player {
     this.carrying = obj;
     this.carryView.clear();
     if (obj) {
-      const c = obj.clone(true);
-      c.position.set(0.35, -0.45, -1.4); c.rotation.set(0, Math.PI / 2 + 0.25, 0.1);
-      c.scale.multiplyScalar(0.55);
-      c.traverse((o) => { if (o.isMesh) { o.castShadow = false; o.material = o.material.clone(); } });
+      // the torch in your right hand, held out ahead and up (grip GRIP of the way up the shaft; head along local +Z)
+      const c = obj.clone(true); c.visible = true;
+      const L = obj.userData.len || 2.1, dir = new THREE.Vector3(-0.12, 0.5, -0.86).normalize();
+      c.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+      c.position.set(0.3, -0.36, -0.42).addScaledVector(dir, -L * GRIP);
+      c.scale.setScalar(1);
+      c.traverse((o) => { if (o.isMesh) { o.castShadow = false; } });
       this.carryView.add(c);
       this.carryMesh = c;
     }
@@ -142,7 +150,7 @@ export class Player {
     this.sprinting = run;
     // walk by default, Shift to run (mocap walk / jog / sprint clips follow the ground speed)
     let speed = this.prone ? 0.9 : this.crouch ? (this.disguised ? 1.5 : 1.1) : run ? 6.2 : 1.6;
-    if (this.carrying) speed *= 0.55;
+    if (this.carrying) speed *= 0.8; // a torch, not a log
     const f = (I.down('KeyW') ? 1 : 0) - (I.down('KeyS') ? 1 : 0);
     const s = (I.down('KeyD') ? 1 : 0) - (I.down('KeyA') ? 1 : 0);
     const fw = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
@@ -264,7 +272,7 @@ export class Player {
   }
 
   fireArrow(power) {
-    this.arrows--;
+    // infinite arrows: the quiver never runs out
     const { o, d } = this.aimRay();
     const mesh = makeArrow(); this.scene.add(mesh);
     const speed = 22 + power * 48;
@@ -360,7 +368,8 @@ export class Player {
 
   updateAvatar(dt) {
     const av = this.avatar; if (!av) return;
-    const show = this.thirdPerson && (!this.debugCam || this.keepAvatar);
+    // forceAvatar: cutscenes show the body even in first person
+    const show = (this.thirdPerson || this.forceAvatar) && (!this.debugCam || this.keepAvatar);
     av.root.visible = show && !(this.dead && this.caughtHidden);
     for (const o of [this.tpBow, this.tpSpear, this.tpStraw, this.tpCarry, this.tpArrow]) o.visible = show;
     if (!show) return;
@@ -375,7 +384,9 @@ export class Player {
     const isBow = this.weapon === 'bow';
     let want = this.faceYaw;
     // archers stand side-on: left shoulder toward the target
-    if (this.climbing) want = this.yaw + Math.PI;
+    const sp = this.scriptPose;
+    if (sp?.faceYaw != null) want = sp.faceYaw;
+    else if (this.climbing) want = this.yaw + Math.PI;
     else if (combat) want = this.yaw + Math.PI + (isBow ? -1.05 : -0.35);
     else if (hs > 0.3) want = Math.atan2(this.vel.x, this.vel.z);
     let dh = want - this.faceYaw; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
@@ -387,6 +398,7 @@ export class Player {
     const mocap = !!av.actions.m_walk, lowPose = this.prone || this.disguised;
     let anim;
     if (this.dead) anim = 'idle';
+    else if (sp) anim = sp.crouch ? (mocap ? 'm_crouch_idle' : 'sneak_pose') : mocap ? 'm_idle' : 'idle';
     else if (this.climbing) anim = 'walk';
     else if (mocap && this._airT > 0.12) anim = 'm_jump';
     else if (this.crouch && (lowPose || !mocap)) anim = hs > 0.2 ? 'walk' : 'sneak_pose';
@@ -403,7 +415,7 @@ export class Player {
       this.bob = (this._bobA ?? this.bob) + dp * Math.PI * 2;
       this._animP = p; this._bobA = this.bob;
     } else { this._animP = undefined; this._bobA = undefined; }
-    const low = this.prone ? 0.32 : this.crouch ? (this.disguised ? 0.55 : mocap ? 1 : 0.72) : 1;
+    const low = sp ? 1 : this.prone ? 0.32 : this.crouch ? (this.disguised ? 0.55 : mocap ? 1 : 0.72) : 1;
     this._low = THREE.MathUtils.lerp(this._low ?? 1, low, Math.min(1, dt * 8));
     av.root.scale.set(1, this._low, 1);
     av.root.updateMatrixWorld(true);
@@ -415,6 +427,18 @@ export class Player {
     const D = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
     const up = new THREE.Vector3(0, 1, 0);
     const d = this.draw;
+    // cutscene pose (picking the brand up, driving it in): look at / reach for world points
+    if (sp) {
+      if (sp.look) av.poser.look(sp.look, sp.lookW ?? 1);
+      if (sp.reachR) av.poser.reach('R', sp.reachR, sp.wR ?? 1);
+      if (sp.reachL) av.poser.reach('L', sp.reachL, sp.wL ?? 1);
+      av.root.updateMatrixWorld(true);
+    }
+    // holding the torch up in the right hand, out in front of the shoulder to light the way
+    else if (this.carrying && !this.dead && cw < 0.01) {
+      av.poser.reach('R', W(B.rArm).addScaledVector(fwd, 0.38).addScaledVector(right, 0.08).add(new THREE.Vector3(0, -0.12, 0)), 1);
+      av.root.updateMatrixWorld(true);
+    }
 
     if (cw > 0.01 && isBow) {
       // straighten the torso a little, head looks down the arrow
@@ -478,19 +502,31 @@ export class Player {
     this.tpStraw.visible = show && this.disguised;
     this.tpStraw.position.copy(ch).addScaledVector(fwd, -0.18).add(new THREE.Vector3(0, -0.05, 0));
     this.tpStraw.quaternion.setFromEuler(new THREE.Euler(-1.2 * (this.crouch ? 1 : 0.4), this.faceYaw, 0, 'YXZ'));
-    // the olive log on the shoulder
+    // the torch in the right fist: shaft through the hand, head up and forward
     if (this.carrying && this.tpCarry.userData.src !== this.carrying) {
-      this.tpCarry.clear(); const c = this.carrying.clone(true); c.traverse((o) => { if (o.isMesh) o.material = o.material.clone(); });
+      this.tpCarry.clear(); const c = this.carrying.clone(true); c.visible = true;
+      c.position.set(0, 0, 0); c.quaternion.identity(); c.scale.setScalar(1);
       this.tpCarry.add(c); this.tpCarry.userData.src = this.carrying; this.tpCarryMesh = c;
     }
-    if (!this.carrying) { this.tpCarry.clear(); this.tpCarry.userData.src = null; }
-    this.tpCarry.position.copy(ch).add(new THREE.Vector3(0, 0.25, 0)).addScaledVector(right, 0.2);
-    this.tpCarry.quaternion.setFromEuler(new THREE.Euler(0, this.faceYaw + Math.PI / 2 + 0.2, 0.08, 'YXZ'));
-    this.tpCarry.scale.setScalar(0.62);
+    if (!this.carrying) { this.tpCarry.clear(); this.tpCarry.userData.src = null; this.tpCarryMesh = null; }
+    else {
+      const L = this.carrying.userData.len || 2.1;
+      const tdir = fwd.clone().multiplyScalar(0.5).add(new THREE.Vector3(0, 0.84, 0)).addScaledVector(right, 0.12).normalize();
+      this.tpCarry.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tdir);
+      this.tpCarry.position.copy(W(B.rHand)).addScaledVector(tdir, -L * GRIP);
+      this.tpCarry.scale.setScalar(1);
+    }
+  }
+
+  // a giant foot lands: the whole view drops, lurches sideways and wobbles back (グワン)
+  thud(k = 1, side = 1) {
+    this.qvy -= 1.6 * k;             // floor drops away under you
+    this.qvr += 0.22 * k * side;     // rolls toward the foot that landed
+    this.qvp += 0.12 * k;            // nods down
   }
 
   updateCamera(dt, t) {
-    this.view.visible = !this.debugCam && !this.thirdPerson;
+    this.view.visible = !this.debugCam && !this.thirdPerson && !this.forceAvatar;
     this.updateAvatar(dt);
     if (this.debugCam) { const c = this.debugCam; this.camera.position.set(c[0], c[1], c[2]); this.camera.lookAt(c[3], c[4], c[5]); return; }
     const eye = this.eyeHeight;
@@ -499,15 +535,22 @@ export class Player {
     const by = Math.sin(this.bob * 2) * 0.035 * bobAmt, bx = Math.cos(this.bob) * 0.03 * bobAmt;
     this.shake = Math.max(0, this.shake - dt * 1.8);
     const sh = this.shake * this.shake;
-    const sx = (Math.sin(t * 37) + Math.sin(t * 23.3)) * 0.04 * sh, sy = (Math.sin(t * 31) + Math.cos(t * 19.1)) * 0.04 * sh;
-    this.camera.position.set(this.pos.x + bx, this.pos.y + this._eye + by, this.pos.z);
+    // footfall springs: ~1.6 Hz, lightly damped so it swings a couple of times before settling
+    {
+      const h = Math.min(dt, 1 / 30), w = 10, z = 0.22;
+      for (const [x, v] of [['qy', 'qvy'], ['qr', 'qvr'], ['qp', 'qvp']]) {
+        this[v] += (-w * w * this[x] - 2 * z * w * this[v]) * h; this[x] += this[v] * h;
+      }
+    }
+    const sx = (Math.sin(t * 37) + Math.sin(t * 23.3)) * 0.04 * sh, sy = (Math.sin(t * 31) + Math.cos(t * 19.1)) * 0.04 * sh + this.qp;
+    this.camera.position.set(this.pos.x + bx, this.pos.y + this._eye + by + this.qy, this.pos.z);
     // breathing sway
     const sway = Math.sin(t * 1.3) * 0.004;
     this.camera.rotation.set(0, 0, 0);
     this.camera.rotation.order = 'YXZ';
     this.camera.rotation.y = this.yaw + sx;
     this.camera.rotation.x = this.pitch + sy + sway + this.recoil * 0.02;
-    this.camera.rotation.z = Math.sin(this.bob) * 0.004 * bobAmt;
+    this.camera.rotation.z = Math.sin(this.bob) * 0.004 * bobAmt + this.qr;
     this.recoil = Math.max(0, this.recoil - dt * 5);
     // drawing the bow = focusing: the view tightens with the pull (eased), screen edges blur (game.js)
     const focusT = !this.carrying && !this.dead && this.weapon === 'bow' && this.drawing ? THREE.MathUtils.smoothstep(this.draw, 0, 1) : 0;
@@ -560,7 +603,9 @@ export class Player {
       this._cam = pivot.clone().lerp(desired, this._boom);
       this.camera.position.copy(this._cam);
       this.avatar.root.visible = this.avatar.root.visible && this._cam.distanceTo(pivot) > 0.55;
+      this.camera.position.y += this.qy;
       this.camera.quaternion.copy(qc);
+      if (this.qr) this.camera.rotateZ(this.qr);
       this._sprintFov = THREE.MathUtils.lerp(this._sprintFov || 0, this.sprinting && (this.moving || 0) > 4 ? 7 : 0, Math.min(1, dt * 4));
       this.fovKick = Math.max(0, (this.fovKick || 0) - dt * 4);
       // tighten a little while the bow is drawn, punch out on release

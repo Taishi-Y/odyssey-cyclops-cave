@@ -10,13 +10,14 @@ in the prompt (MALE / style text), the audio is only trimmed and loudness-normal
 Output: public/assets/voice/*.mp3 + public/assets/voice/manifest.json
 """
 import numpy as np
-import base64, json, pathlib, random, subprocess, sys, tempfile, urllib.request, urllib.error, concurrent.futures as cf
+import os, base64, json, pathlib, random, subprocess, sys, tempfile, urllib.request, urllib.error, concurrent.futures as cf
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "assets" / "voice"; OUT.mkdir(parents=True, exist_ok=True)
 GK = os.environ.get("GEMINI_API_KEY") or sys.exit("set GEMINI_API_KEY")
 VID = json.load(open(ROOT / "tools" / "gemini-voices.json"))
-CREW = ["deep2", "deep3", "crewC", "crewD", "crewE", "crewF", "tenor", "mid", "wiry"]  # crew voices A-I, low to high mixed
+BASE_CREW = ["deep2", "deep3", "crewC", "crewD", "crewE", "crewF", "tenor", "mid", "wiry"]  # crew voices A-I, low to high mixed
+CREW = BASE_CREW + ["maniac", "zealot"]  # J: the man who snapped and laughs, K: the shrill fanatic praying to the gods
 RAW = ROOT / "tools" / ".raw_voice"; RAW.mkdir(exist_ok=True)
 MALE = ("An adult man with a deep, low, masculine chest voice. SCREAMING at the absolute top of his lungs the ENTIRE time, "
         "every single word, a hoarse, raw, guttural yell tearing from the chest, voice straining and cracking. "
@@ -61,6 +62,46 @@ BARKS = {
     "blind": (MOODS, ["He's BLIND!! <gasp> Stay LOW!! STAY LOW!!", "His HANDS!! <gasp> WATCH HIS HANDS!!", "He's gone MAD!! <gasp> Get back!! GET BACK!!",
                       "We DID it!! <gasp> Gods, we DID IT!!", "He's feeling for us!! <gasp> DON'T MOVE!! DON'T MOVE!!"]),
 }
+# two characters who break the "deep screaming man" mould. They get their own lines in every category.
+SPECIAL = {
+    "maniac": {
+        "voice": ("An adult man whose mind has SNAPPED from terror. He LAUGHS like a lunatic: loud, cackling, hysterical, unhinged "
+                  "maniacal laughter bursting out between and through the words, howling, wheezing, giggling, then shrieking with laughter again. "
+                  "EMOTION 10 out of 10, MAXIMUM. Never calm, never normal speech, never whispering. A madman in a cave with a man-eating giant."),
+        "moods": ["Cackling madly the whole time.", "Howling with laughter, gasping for air, tears streaming.", "Giggling in a creepy high voice, then roaring with laughter."],
+        "lines": {
+            "arrive": ["HAHAHAHA!! <gasp> Something BIG is coming!! HAHAHA!!", "Hehehe... <laugh> HAHAHA!! The ground is DANCING!!", "HAHAHA!! <gasp> We're going to DIE!! HAHAHAHA!!"],
+            "sealed": ["HAHAHA!! <gasp> He LOCKED us in!! HAHAHAHA!!", "A TOMB!! <laugh> It's a TOMB!! HAHAHAHA!!", "Hehehe... no way OUT!! <laugh> HAHAHAHA!!"],
+            "grab": ["HAHAHAHA!! <gasp> He's got ME!! HAHAHAHA!!", "Put me DOWN!! <laugh> HAHAHA!! Put me DOWN!!", "HAHAHA!! <gasp> I'm FLYING!! HAHAHAHA!!"],
+            "witness": ["HAHAHA!! <gasp> Look at him KICK!! HAHAHAHA!!", "He's got him!! <laugh> HAHAHAHA!! He's GOT him!!", "HAHAHAHA!! <gasp> You're NEXT!! We're ALL next!!"],
+            "eaten": ["HAHAHAHA!! <gasp> He ATE him!! HAHAHAHA!!", "CRUNCH!! <laugh> HAHAHAHA!! Did you hear that CRUNCH?!!", "HAHAHA!! <gasp> Who's HUNGRY?!! HAHAHAHA!!"],
+            "dropped": ["HAHAHA!! <gasp> RUN!! RUN, little MICE!! HAHAHA!!", "He DROPPED him!! <laugh> HAHAHAHA!!"],
+            "spotted": ["HAHAHAHA!! <gasp> He SEES us!! HAHAHAHA!!", "Over HERE!! <laugh> HAHAHA!! Come and GET me!!", "HAHAHA!! <gasp> Peekaboo!! HAHAHAHA!!"],
+            "waking": ["HAHAHA!! <gasp> Good MORNING, big man!! HAHAHAHA!!", "He's WAKING!! <laugh> HAHAHAHA!!"],
+            "blind": ["HAHAHAHA!! <gasp> He can't SEE us!! HAHAHAHA!!", "Hehehe... <laugh> Over HERE, blind man!! HAHAHA!!"],
+        },
+    },
+    "zealot": {
+        "voice": ("A young man with a thin, HIGH-PITCHED, SHRILL, piercing voice. A PANICKING religious fanatic PRAYING to the Greek gods "
+                  "at the top of his lungs like a PSYCHOPATH: shrieking, frantic, breathless, words tumbling out too fast, eerie fervor, "
+                  "voice cracking into a squeal. EMOTION 10 out of 10, MAXIMUM. Never calm, never low, never whispering."),
+        "moods": ["Shrieking prayers in wild-eyed panic.", "Frantic, breathless, gabbling the prayer too fast.", "Squealing, creepy fervor, almost laughing, almost sobbing."],
+        "lines": {
+            "arrive": ["ZEUS!! ZEUS!! <gasp> Father Zeus, SAVE ME!! SAVE ME!!", "Athena, grey-eyed Athena!! <gasp> PROTECT your servant!!", "Gods of OLYMPUS!! <gasp> Hear me, HEAR ME!!"],
+            "sealed": ["Hermes!! <gasp> Open the door, HERMES!! OPEN IT!!", "ZEUS!! <gasp> Break the stone, Father ZEUS!! BREAK IT!!", "A hundred BULLS!! <gasp> I'll burn you a hundred BULLS!!"],
+            "grab": ["POSEIDON, NO!! <gasp> I'm YOURS!! I'm YOURS!!", "ZEUS!! ZEUS!! <gasp> Strike him DOWN!! STRIKE HIM!!", "Athena!! <gasp> ATHENA, TAKE ME!! NOT HIM!!"],
+            "witness": ["The gods demand it!! <gasp> The gods DEMAND it!!", "ZEUS!! <gasp> Send your LIGHTNING!! NOW!!", "He is a SACRIFICE!! <gasp> A sacrifice to POSEIDON!!"],
+            "eaten": ["Hades!! <gasp> Hades, receive his SOUL!! RECEIVE HIM!!", "It's the gods' WILL!! <gasp> It's their WILL!!", "Forgive us, POSEIDON!! <gasp> FORGIVE US!!"],
+            "dropped": ["Athena SPARED him!! <gasp> ATHENA SPARED HIM!!", "A MIRACLE!! <gasp> Praise ZEUS!! PRAISE HIM!!"],
+            "spotted": ["Don't LOOK at me!! <gasp> ZEUS, make me INVISIBLE!!", "Apollo!! <gasp> APOLLO, guide our SPEARS!!", "It's HIM!! <gasp> Poseidon's SON!! Gods, HELP US!!"],
+            "waking": ["Hypnos!! <gasp> Keep him ASLEEP!! HYPNOS!!", "Father ZEUS!! <gasp> He RISES!! He RISES!!"],
+            "blind": ["The gods have BLINDED him!! <gasp> PRAISE THE GODS!!", "Poseidon will be ANGRY!! <gasp> Forgive us, FORGIVE US!!"],
+        },
+    },
+}
+SPECIAL_KEEP = 1
+SPECIAL_TAKES = {"arrive": 3, "sealed": 3, "grab": 3, "witness": 3, "eaten": 3, "dropped": 2, "spotted": 3, "waking": 2, "blind": 2}
+
 TAKES_PER_CAT = {"arrive": 14, "sealed": 12, "grab": 14, "witness": 16, "eaten": 12, "dropped": 10, "spotted": 14, "waking": 10, "blind": 10}
 
 
@@ -158,7 +199,7 @@ def main():
     for cat, (moods, lines) in BARKS.items():
         manifest["barks"][cat] = []
         seen = set()
-        voices = [CREW[i % len(CREW)] for i in range(TAKES_PER_CAT[cat])]; rnd.shuffle(voices)  # every man gets a turn
+        voices = [BASE_CREW[i % len(BASE_CREW)] for i in range(TAKES_PER_CAT[cat])]; rnd.shuffle(voices)  # every man gets a turn
         for k, v in enumerate(voices):
             while True:
                 li = rnd.randrange(len(lines))
@@ -167,6 +208,18 @@ def main():
             name = f"{cat}_{k:02d}_{v}"
             jobs.append((name, lines[li], bark_style(v, rnd.choice(moods), rnd.choice(INTENSITY)), v))
             manifest["barks"][cat].append({"f": name + ".mp3", "v": CREW.index(v), "t": lines[li]})
+    # the two special characters: extra takes appended per category (own RNG so the base takes above stay as baked)
+    srnd = random.Random(11)
+    for cat in BARKS:
+        for v, sp in SPECIAL.items():
+            lines = sp["lines"][cat]
+            for j in range(SPECIAL_TAKES[cat]):
+                t = lines[j % len(lines)]
+                style = f"{sp['voice']} {srnd.choice(sp['moods'])}"
+                if j >= SPECIAL_KEEP: continue  # only the first take per category is baked for now
+                name = f"{cat}_{v}_{j}"
+                jobs.append((name, t, style, v))
+                manifest["barks"][cat].append({"f": name + ".mp3", "v": CREW.index(v), "t": t})
     for i, (key, (v, style, text)) in enumerate(LINES.items()):
         name = f"line_{i:02d}_{v}"
         jobs.append((name, text, MALE + " " + style, v)); manifest["lines"][key] = {"f": name + ".mp3", "v": CREW.index(v) if v in CREW else -1}

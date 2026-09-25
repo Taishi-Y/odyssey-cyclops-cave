@@ -70,6 +70,16 @@
     "f": "arrive_13_crewF.mp3",
     "v": 5,
     "t": "Did you HEAR that?!! <gasp> Did you HEAR that?!!"
+   },
+   {
+    "f": "arrive_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHAHA!! <gasp> Something BIG is coming!! HAHAHA!!"
+   },
+   {
+    "f": "arrive_zealot_0.mp3",
+    "v": 10,
+    "t": "ZEUS!! ZEUS!! <gasp> Father Zeus, SAVE ME!! SAVE ME!!"
    }
   ],
   "sealed": [
@@ -132,6 +142,16 @@
     "f": "sealed_11_mid.mp3",
     "v": 7,
     "t": "He's shut us IN!! <gasp> He's shut us in with HIM!!"
+   },
+   {
+    "f": "sealed_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHA!! <gasp> He LOCKED us in!! HAHAHAHA!!"
+   },
+   {
+    "f": "sealed_zealot_0.mp3",
+    "v": 10,
+    "t": "Hermes!! <gasp> Open the door, HERMES!! OPEN IT!!"
    }
   ],
   "grab": [
@@ -204,6 +224,16 @@
     "f": "grab_13_deep2.mp3",
     "v": 0,
     "t": "HELP ME!! HELP!! <gasp> ODYSSEUS!!"
+   },
+   {
+    "f": "grab_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHAHA!! <gasp> He's got ME!! HAHAHAHA!!"
+   },
+   {
+    "f": "grab_zealot_0.mp3",
+    "v": 10,
+    "t": "POSEIDON, NO!! <gasp> I'm YOURS!! I'm YOURS!!"
    }
   ],
   "witness": [
@@ -286,6 +316,16 @@
     "f": "witness_15_crewC.mp3",
     "v": 2,
     "t": "Let him GO!! <gasp> LET HIM GO, YOU MONSTER!!"
+   },
+   {
+    "f": "witness_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHA!! <gasp> Look at him KICK!! HAHAHAHA!!"
+   },
+   {
+    "f": "witness_zealot_0.mp3",
+    "v": 10,
+    "t": "The gods demand it!! <gasp> The gods DEMAND it!!"
    }
   ],
   "eaten": [
@@ -348,6 +388,16 @@
     "f": "eaten_11_crewC.mp3",
     "v": 2,
     "t": "I heard his BONES!! <gasp> I HEARD HIS BONES!!"
+   },
+   {
+    "f": "eaten_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHAHA!! <gasp> He ATE him!! HAHAHAHA!!"
+   },
+   {
+    "f": "eaten_zealot_0.mp3",
+    "v": 10,
+    "t": "Hades!! <gasp> Hades, receive his SOUL!! RECEIVE HIM!!"
    }
   ],
   "dropped": [
@@ -400,6 +450,16 @@
     "f": "dropped_09_crewD.mp3",
     "v": 3,
     "t": "This WAY!! <gasp> THIS WAY!!"
+   },
+   {
+    "f": "dropped_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHA!! <gasp> RUN!! RUN, little MICE!! HAHAHA!!"
+   },
+   {
+    "f": "dropped_zealot_0.mp3",
+    "v": 10,
+    "t": "Athena SPARED him!! <gasp> ATHENA SPARED HIM!!"
    }
   ],
   "spotted": [
@@ -472,6 +532,16 @@
     "f": "spotted_13_deep2.mp3",
     "v": 0,
     "t": "He's SEEN us!! <gasp> He's COMING!!"
+   },
+   {
+    "f": "spotted_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHAHA!! <gasp> He SEES us!! HAHAHAHA!!"
+   },
+   {
+    "f": "spotted_zealot_0.mp3",
+    "v": 10,
+    "t": "Don't LOOK at me!! <gasp> ZEUS, make me INVISIBLE!!"
    }
   ],
   "waking": [
@@ -524,6 +594,16 @@
     "f": "waking_09_wiry.mp3",
     "v": 8,
     "t": "He's WAKING!! <gasp> HE'S WAKING!!"
+   },
+   {
+    "f": "waking_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHA!! <gasp> Good MORNING, big man!! HAHAHAHA!!"
+   },
+   {
+    "f": "waking_zealot_0.mp3",
+    "v": 10,
+    "t": "Hypnos!! <gasp> Keep him ASLEEP!! HYPNOS!!"
    }
   ],
   "blind": [
@@ -576,6 +656,16 @@
     "f": "blind_09_tenor.mp3",
     "v": 6,
     "t": "He's feeling for us!! <gasp> DON'T MOVE!! DON'T MOVE!!"
+   },
+   {
+    "f": "blind_maniac_0.mp3",
+    "v": 9,
+    "t": "HAHAHAHA!! <gasp> He can't SEE us!! HAHAHAHA!!"
+   },
+   {
+    "f": "blind_zealot_0.mp3",
+    "v": 10,
+    "t": "The gods have BLINDED him!! <gasp> PRAISE THE GODS!!"
    }
   ]
  },
