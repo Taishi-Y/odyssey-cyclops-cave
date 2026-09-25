@@ -10,7 +10,7 @@ export function installScore(Audio) {
 
   P.startScore = function () {
     const ctx = this.ctx;
-    const bus = (this.scoreBus = ctx.createGain()); bus.gain.value = 0.9;
+    const bus = (this.scoreBus = ctx.createGain()); bus.gain.value = 1.5;
     this.out(bus, 0.25); // mostly dry: the tracks carry their own space
     this.scoreLayers = {};
     for (const [key, file, level] of [['bed', 'ossuary6_air.mp3', 1], ['tension', 'dark_fog.mp3', 0]]) {
