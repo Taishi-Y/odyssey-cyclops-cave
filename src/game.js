@@ -8,6 +8,7 @@ import { Input, isTouchDevice, attachTouchControls } from './input.js';
 import { Audio } from './audio.js';
 import { Particles, Decals } from './fx.js';
 import { Radar, AlertSystem, WeaponWheel, CharacterSwitch } from './tactical.js';
+import { StealthMeter, QTE, PhotoMode, Pickups } from './modern.js';
 
 const $ = (id) => document.getElementById(id);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -94,6 +95,14 @@ export class Game {
     this.alertSys = new AlertSystem(this);
     this.wheel = new WeaponWheel(this);
     this.switcher = new CharacterSwitch(this);
+    // modern action-adventure layer
+    this.meter = new StealthMeter(this);
+    this.qte = new QTE(this);
+    this.photo = new PhotoMode(this);
+    this.pickups = new Pickups(this);
+    this.realTasks = [];
+    this.player.hp = 100;
+    this.setupPickups();
     this.player.onKnock = () => this.knock();
     this.player.onSwitch = () => this.switchCharacter();
     const prevImpact = this.player.onImpact;
@@ -443,6 +452,7 @@ export class Game {
     this.audio.stomp(p, 1);
     const d = p.distanceTo(this.player.pos);
     this.player.shake = Math.max(this.player.shake, Math.min(1.1, 9 / (d + 3)));
+    if (d < 18) this.haptic(Math.round(60 * (1 - d / 18)) + 10);
     this.particles.dust(p.clone().add(V((Math.random() - 0.5) * 3, 0.2, (Math.random() - 0.5) * 3)), 6, 2.5);
   }
 
@@ -586,7 +596,7 @@ export class Game {
         const inView = toP.dot(fwd) > this.VIEW_DOT && dist < this.VIEW_RANGE;
         const lit = this.lightAt(P.pos);
         // Metal Gear-like detection: distance, light, stance and movement all matter
-        const vis = inView ? Math.min(2, lit * 1.2 + 0.25) * (P.prone ? 0.22 : P.crouch ? 0.55 : 1) * (P.moving > 0.5 ? 1.3 : 0.8) * Math.max(0, 1 - dist / this.VIEW_RANGE) * 1.6 : 0;
+        const vis = inView && !P.hiddenInStraw ? Math.min(2, lit * 1.2 + 0.25) * (P.prone ? 0.22 : P.crouch ? 0.55 : 1) * (P.moving > 0.5 ? 1.3 : 0.8) * Math.max(0, 1 - dist / this.VIEW_RANGE) * 1.6 : 0;
         if (vis > 0 && !this.physics.raycastSegment(eye, P.pos.clone().add(V(0, 1.2, 0)))) { st.alert += vis * dt; st.noiseAt = P.pos.clone(); }
         this.makeNoise(P.pos, P.noise * dt * 8);
       }
@@ -650,21 +660,48 @@ export class Game {
 
   async caughtPlayer(reason) {
     const P = this.player;
-    if (P.dead || this.params.has('god')) return;
-    P.dead = true; P.locked = true;
+    if (P.dead || P.grabbed || this.params.has('god')) return;
+    P.grabbed = true; P.locked = true;
     this.audio.roar(this.cy.eyeWorld(), { dur: 1.5, vol: 1 });
+    this.haptic([80, 40, 80]);
     const hand = this.cy.bones.RightHand;
     this.hud.dmg.style.opacity = 1;
-    for (let t = 0; t < 1.8; t += 1 / 30) {
-      await this.wait(1 / 30);
-      const mouth = this.cy.mouthWorld();
-      this.cy.ik.R = { target: mouth.clone().add(V(0, -1.5, 0.6)), w: 1 };
-      hand.getWorldPosition(P.pos); P.pos.y -= 1.4;
-      const look = mouth.clone().sub(this.camera.position);
-      P.yaw = Math.atan2(-look.x, -look.z); P.pitch = Math.atan2(look.y, Math.hypot(look.x, look.z));
-      P.shake = 1.2;
+    // lifted toward the mouth while you struggle (God of War style mash)
+    let lifting = true;
+    (async () => {
+      while (lifting) {
+        await this.wait(1 / 30);
+        const mouth = this.cy.mouthWorld();
+        this.cy.ik.R = { target: mouth.clone().add(V(0, -2.2, 0.8)), w: 1 };
+        hand.getWorldPosition(P.pos); P.pos.y -= 1.4;
+        const look = mouth.clone().sub(this.camera.position);
+        P.yaw = Math.atan2(-look.x, -look.z); P.pitch = Math.atan2(look.y, Math.hypot(look.x, look.z));
+        P.shake = Math.max(P.shake, 0.6);
+      }
+    })();
+    this.slowPunch = 2.6;
+    const escaped = P.hp > 40 && await this.qte.mash({ label: 'BREAK FREE', count: this.input.touch ? 9 : 12, time: 2.4 });
+    lifting = false; this.slowPunch = 0;
+    if (escaped) {
+      // he drops you: you take a hard fall but live
+      P.hp -= 40;
+      this.cy.ik.R = null;
+      this.cyState.stun = 2.5; this.cyState.alert = 0.8;
+      this.audio.roar(this.cy.eyeWorld(), { dur: 1.2, vol: 0.9, pain: true });
+      const away = flat(P.pos).sub(flat(this.cy.root.position)).normalize();
+      P.pos.copy(this.cy.root.position).addScaledVector(away, 5); P.pos.y = floorHeightAt(P.pos.x, P.pos.z) + 2.5;
+      P.vel.set(away.x * 3, 0, away.z * 3);
+      P.lastSafe = null;
+      this.popText('BROKE FREE');
+      this.haptic(150);
+      this.hud.dmg.style.opacity = 0.4;
+      P.grabbed = false; P.locked = false;
+      this._gateGrab = false;
+      return;
     }
+    P.dead = true;
     this.audio.crunch(this.camera.position);
+    this.haptic(500);
     this.post.grade.uniforms.get('uFlash').value = 0;
     this.hud.fade.style.transition = 'opacity 0.3s'; this.hud.fade.style.background = '#300'; this.hud.fade.style.opacity = 1;
     await this.wait(1);
@@ -716,6 +753,7 @@ export class Game {
     const holdE = I.down('KeyE');
     // pick up spent arrows/spears
     if (P.nearPickup()) { prompt = '[E] Pick up arrow / spear'; if (I.pressed('KeyE')) P.tryPickup(); }
+    { const it = this.pickups.nearest(P.pos); if (it) { prompt = this.pickups.prompt(it); if (I.pressed('KeyE')) this.pickups.take(it); } }
     const pp = P.pos;
     const log = W.interact.find((i) => i.id === 'log');
     if (log.enabled && !P.carrying && log.obj.visible && pp.distanceTo(log.obj.position) < 4) {
@@ -743,7 +781,7 @@ export class Game {
       const eye = this.cy.eyeWorld();
       if (flat(pp).distanceTo(flat(eye)) < 3.2) {
         prompt = '[E] Drive the burning stake into his eye';
-        if (I.pressed('KeyE')) this.blindCyclops();
+        if (I.pressed('KeyE')) this.strikeEye();
       }
     }
     // straw disguise
@@ -753,7 +791,7 @@ export class Game {
         if (I.pressed('KeyE')) { P.disguised = true; this.say('Straw tied on. Crouched, I should pass for a sheep… I hope', 3.5, 'Odysseus'); }
       }
     }
-    this.hud.prompt.innerHTML = prompt;
+    this.hud.prompt.innerHTML = this.qte.el.classList.contains('on') ? '' : prompt;
   }
 
   // ------------------------------------------------------------------ soldiers
@@ -831,6 +869,42 @@ export class Game {
     if (P.pos.z > this.world.doorClosed.z + 4.5 && !this.escaping) { this.escaping = true; this.runEscape(); }
   }
 
+  // ------------------------------------------------------------------ real-time helpers (unaffected by slow motion)
+  realFrame() { return new Promise((r) => this.realTasks.push({ frame: true, r })); }
+  realWait(sec) { return new Promise((r) => this.realTasks.push({ t: (this.realTime || 0) + sec, r })); }
+  haptic(ms) { try { navigator.vibrate?.(ms); } catch (e) {} }
+
+  setupPickups() {
+    const W = this.world, S = this.scene;
+    for (const w of W.cheeseWheels || []) this.pickups.add(w, 'cheese', 35);
+    // a dropped quiver and a pile of throwing stones
+    const quiver = new THREE.Group();
+    const qm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.55, 12), new THREE.MeshStandardMaterial({ color: 0x4a3222, roughness: 0.8 }));
+    qm.rotation.z = 1.35; qm.castShadow = true; quiver.add(qm);
+    quiver.position.set(-9, floorHeightAt(-9, 7) + 0.08, 7); S.add(quiver);
+    this.pickups.add(quiver, 'arrows', 6);
+    const pile = new THREE.Group();
+    for (let i = 0; i < 7; i++) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07 + Math.random() * 0.04, 0), new THREE.MeshStandardMaterial({ color: 0x8a8070, roughness: 0.95 })); m.position.set((Math.random() - 0.5) * 0.4, 0.05, (Math.random() - 0.5) * 0.4); m.castShadow = true; pile.add(m); }
+    pile.position.set(4, floorHeightAt(4, -8) + 0.02, -8); S.add(pile);
+    this.pickups.add(pile, 'stones', 4);
+  }
+
+  // God of War style timing strike to blind the giant
+  async strikeEye() {
+    if (this._striking) return; this._striking = true;
+    const P = this.player;
+    P.locked = true;
+    this.slowPunch = 2.2; // world in slow motion while you line up the blow
+    const eye = this.cy.eyeWorld();
+    const side = V(-Math.sin(P.yaw), 0, -Math.cos(P.yaw));
+    this.camOverride = eye.clone().addScaledVector(side, -3.2).add(V(0.8, 1.6, 0)); this.camTarget = eye.clone();
+    this.say('Wait for the moment…', 1.5, 'Odysseus');
+    const ok = await this.qte.timing({ label: 'DRIVE THE STAKE', dur: 1.7 });
+    this.slowPunch = 0; this.camOverride = null; this.camTarget = null; P.locked = false; this._striking = false;
+    if (ok) { this.haptic([60, 40, 120]); this.blindCyclops(); }
+    else { this.say('Too early — he stirs!', 2); this.haptic(200); this.wakeUp(); }
+  }
+
   // ------------------------------------------------------------------ Metal Gear: knock on the wall to lure the giant
   knock() {
     const P = this.player;
@@ -878,7 +952,7 @@ export class Game {
       (P.aim > 0.5 || P.drawing) && P.stamina > 0 && !P.exhausted;
     P.bulletTime = want;
     this.slowPunch = Math.max(0, (this.slowPunch || 0) - dtReal);
-    const target = this.slowPunch > 0 ? 0.08 : this.wheel?.open ? 0.15 : want ? 0.2 : 1;
+    const target = this.slowPunch > 0 ? (this.slowPunch > 1 ? 0.3 : 0.08) : this.wheel?.open ? 0.15 : want ? 0.2 : 1;
     // ease into slow motion quickly, out of it a bit slower
     const k = Math.min(1, dtReal * (want ? 10 : 5));
     this.timeScale = THREE.MathUtils.lerp(this.timeScale ?? 1, target, k);
@@ -908,6 +982,8 @@ export class Game {
   }
 
   hitMarker(critical) {
+    this.slowPunch = Math.max(this.slowPunch || 0, critical ? 0.3 : 0.07); // hit-stop
+    this.haptic(critical ? 90 : 30);
     const c = this.hud.cross;
     c.classList.remove('hit', 'crit'); void c.offsetWidth;
     c.classList.add(critical ? 'crit' : 'hit');
@@ -921,6 +997,13 @@ export class Game {
   // ------------------------------------------------------------------ main update
   update(dt, t, dtReal = dt) {
     this.dt = dt;
+    // real-time tasks (QTE, photo mode) run even when the world is slowed or frozen
+    this.realTime = (this.realTime || 0) + dtReal; this.lastRealDt = dtReal;
+    if (this.realTasks?.length) { const rt = this.realTasks; this.realTasks = []; for (const k of rt) { if (k.frame || this.realTime >= k.t) k.r(); else this.realTasks.push(k); } }
+    if (this.photo && this.started) {
+      if (this.input.pressed('KeyP')) this.photo.toggle();
+      if (this.photo.on) { this.timeScale = 0; this.photo.update(dtReal); this.input.endFrame(); return; }
+    }
     this.updateBulletTime(dtReal);
     if (!this.started) { this.cy.update(dt); return; }
     this.time += dt; this.phaseT += dt;
@@ -933,6 +1016,9 @@ export class Game {
     this.player.update(dt, t, dtReal);
     if (this.camOverride) { this.camera.position.copy(this.camOverride); this.camera.lookAt(this.camTarget); }
     this.radar.update(dtReal);
+    this.meter.update(dtReal);
+    // hiding in a straw pile (crouched/prone right next to it)
+    { const P = this.player; P.hiddenInStraw = (P.crouch || P.prone) && this.world.interact.some((i) => i.id === 'straw' && flat(i.pos).distanceTo(flat(P.pos)) < 1.9); }
     this.alertSys.update(dtReal);
     for (const n of this.noiseRings) n.t -= dtReal * 0.8;
     this.noiseRings = this.noiseRings.filter((n) => n.t > 0);
@@ -956,12 +1042,13 @@ export class Game {
     // audio listener
     this.audio.listener = { pos: this.camera.position, yaw: this.player.yaw };
     this.audio.update(dt, this.camera.position.distanceTo(this.world.firePos));
+    this.audio.updateWorld?.(dt, this);
     // flash decay
     const fl = this.post.grade.uniforms.get('uFlash'); fl.value = Math.max(0, fl.value - dt * 0.6);
     // HUD
     const P = this.player;
     this.hud.weapon.innerHTML = P.carrying ? '<b>STAKE</b>' : P.weapon === 'bow' ? `<b>BOW</b>  arrows ${P.arrows}` : P.weapon === 'stone' ? `<b>STONE</b>  ${P.stones}` : `<b>SPEAR</b>  ${P.spears}`;
-    this.hud.status.innerHTML = `Men ${this.soldiers.filter((s) => s.alive).length} / 12${P.disguised ? '<br>Wearing straw' : ''}${P.prone ? '<br>Prone' : P.crouch ? '<br>Crouching' : ''}`;
+    this.hud.status.innerHTML = `<div class="hp"><div style="width:${Math.max(0, P.hp)}%"></div></div>Men ${this.soldiers.filter((s) => s.alive).length} / 12${P.disguised ? '<br>Wearing straw' : ''}${P.prone ? '<br>Prone' : P.crouch ? '<br>Crouching' : ''}${P.climbing ? '<br>Climbing' : ''}`;
     this.hud.cross.classList.toggle('aim', P.aim > 0.5 || P.drawing);
     this.hud.cross.style.setProperty('--draw', P.draw.toFixed(3));
     this.updateStaminaWheel();

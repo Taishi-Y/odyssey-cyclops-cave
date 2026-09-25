@@ -35,6 +35,7 @@ export function attachTouchControls(input) {
     <div class="tbtn small" id="t-weapon">WEAPON</div>
     <div class="tbtn small" id="t-cam">CAM</div>
     <div class="tbtn small" id="t-switch">SWITCH</div>
+    <div class="tbtn small" id="t-photo">PHOTO</div>
     <div class="tbtn" id="t-wheel">WHEEL</div>
     <div class="tbtn" id="t-knock">KNOCK</div>
     <div class="tbtn" id="t-prone">PRONE</div>`;
@@ -83,8 +84,8 @@ export function attachTouchControls(input) {
   fire.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; input._fireLookId = t.identifier; input._fireLast = { x: t.clientX, y: t.clientY }; input.mouseDown[0] = true; input.mouseDown[2] = true; fire.classList.add('on'); e.preventDefault(); }, { passive: false });
   const fireEnd = (e) => { for (const t of e.changedTouches) if (t.identifier === input._fireLookId) { input._fireLookId = null; input.mouseDown[0] = false; setTimeout(() => (input.mouseDown[2] = false), 120); fire.classList.remove('on'); } };
   fire.addEventListener('touchend', fireEnd); fire.addEventListener('touchcancel', fireEnd);
-  const tap = (id, code) => root.querySelector(id).addEventListener('touchstart', (e) => { input.just.add(code); K.add(code); setTimeout(() => K.delete(code), 60); e.preventDefault(); }, { passive: false });
-  tap('#t-jump', 'Space'); tap('#t-cam', 'KeyV'); tap('#t-knock', 'KeyF'); tap('#t-switch', 'KeyX');
+  const tap = (id, code) => root.querySelector(id).addEventListener('touchstart', (e) => { if (code === 'Space') input.touchE = true; input.just.add(code); K.add(code); setTimeout(() => K.delete(code), 60); e.preventDefault(); }, { passive: false });
+  tap('#t-jump', 'Space'); tap('#t-cam', 'KeyV'); tap('#t-knock', 'KeyF'); tap('#t-switch', 'KeyX'); tap('#t-photo', 'KeyP');
   const prone = root.querySelector('#t-prone');
   prone.addEventListener('touchstart', (e) => { input.just.add('KeyZ'); prone.classList.toggle('on'); e.preventDefault(); }, { passive: false });
   const wheel = root.querySelector('#t-wheel');
@@ -92,7 +93,7 @@ export function attachTouchControls(input) {
   wheel.addEventListener('touchend', () => { setTimeout(() => K.delete('KeyQwheel'), 30); wheel.classList.remove('on'); });
   // E: tap for actions, hold for "hold E" actions (hardening the stake)
   const use = root.querySelector('#t-use');
-  use.addEventListener('touchstart', (e) => { input.just.add('KeyE'); K.add('KeyE'); use.classList.add('on'); e.preventDefault(); }, { passive: false });
+  use.addEventListener('touchstart', (e) => { input.touchE = true; input.just.add('KeyE'); K.add('KeyE'); use.classList.add('on'); e.preventDefault(); }, { passive: false });
   use.addEventListener('touchend', () => { K.delete('KeyE'); use.classList.remove('on'); });
   const crouch = root.querySelector('#t-crouch');
   crouch.addEventListener('touchstart', (e) => { if (K.has('KeyC')) { K.delete('KeyC'); crouch.classList.remove('on'); } else { K.add('KeyC'); crouch.classList.add('on'); } e.preventDefault(); }, { passive: false });

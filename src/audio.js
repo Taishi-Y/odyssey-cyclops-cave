@@ -1,3 +1,4 @@
+import { installFoley } from './foley.js';
 // Procedural sound design (WebAudio): cave ambience, fire, giant footsteps, roars, sheep, bow, impacts, score.
 export class Audio {
   constructor() {
@@ -245,3 +246,4 @@ export class Audio {
     }
   }
 }
+installFoley(Audio);

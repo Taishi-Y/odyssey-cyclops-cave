@@ -150,8 +150,29 @@ export class Player {
     const accel = this.onGround ? 12 : 2;
     this.vel.x += (wish.x - this.vel.x) * Math.min(1, accel * dt);
     this.vel.z += (wish.z - this.vel.z) * Math.min(1, accel * dt);
-    if (this.onGround && I.pressed('Space') && !this.carrying) { this.vel.y = 5.4; this.onGround = false; }
-    this.vel.y -= 18 * dt;
+    // ---- Zelda-style climbing: push into a steep rock face to climb it (uses stamina)
+    const fwdDir = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    const rockAt = (h, d, th = -0.3) => rockField(this.pos.x + fwdDir.x * d, this.pos.y + h, this.pos.z + fwdDir.z * d) > th;
+    const wallAhead = rockAt(1.0, 0.75) && rockAt(1.7, 0.8);
+    const canClimb = !this.carrying && !this.crouch && !this.exhausted && this.stamina > 0.02 && this.thirdPerson !== undefined;
+    if (!this.climbing && canClimb && f > 0 && wallAhead && (!this.onGround || (this.pushT = (this.pushT || 0) + dt) > 0.25)) { this.climbing = true; this.audio.impact(this.pos, 'rock'); }
+    if (f <= 0) this.pushT = 0;
+    if (this.climbing) {
+      const headBlocked = rockField(this.pos.x, this.pos.y + 2.0, this.pos.z) > -0.2;
+      const topClear = !rockAt(1.9, 0.8, -0.6) && !rockAt(1.3, 0.8, -0.6);
+      if (topClear && f > 0) { this.vel.set(fwdDir.x * 3, 4.2, fwdDir.z * 3); this.climbing = false; this.popHint = 'mantle'; }
+      else if (!canClimb || !wallAhead || headBlocked || I.pressed('Space')) {
+        this.climbing = false;
+        if (I.pressed('Space')) this.vel.set(-fwdDir.x * 3, 4, -fwdDir.z * 3); // leap off the wall
+      } else {
+        const climbSpeed = f > 0 ? 1.5 : f < 0 ? -1.5 : 0;
+        this.vel.set(fwdDir.x * 0.8 + (s ? new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).x * s * 1.2 : 0), climbSpeed, fwdDir.z * 0.8 + (s ? -Math.sin(this.yaw) * s * 1.2 : 0));
+        this.climbDrain = f !== 0 || s !== 0 ? 0.12 : 0.04;
+      }
+    }
+    if (!this.climbing) this.climbDrain = 0;
+    if (!this.climbing && this.onGround && I.pressed('Space') && !this.carrying) { this.vel.y = 5.4; this.onGround = false; }
+    if (!this.climbing) this.vel.y -= 18 * dt;
     // while in bullet time you hang in the air (fall very slowly)
     if (this.bulletTime && this.vel.y < -1.2) this.vel.y = -1.2;
     // integrate in substeps
@@ -190,6 +211,7 @@ export class Player {
     let drain = 0;
     if (this.sprinting && (this.moving || 0) > 1) drain += 0.1;
     if (this.bulletTime) drain += 0.2;
+    if (this.climbing) drain += this.climbDrain || 0.08;
     if (drain > 0) { this.stamina = Math.max(0, this.stamina - drain * dtReal); this.staminaWait = 0.8; if (this.stamina === 0) this.exhausted = true; }
     else {
       this.staminaWait -= dtReal;
@@ -286,7 +308,7 @@ export class Player {
       if (hit) {
         p.pos.copy(hit.point).addScaledVector(p.vel.clone().normalize(), p.kind === 'spear' ? 0.25 : 0.12);
         p.stuck = true;
-        this.audio.impact(hit.point, 'rock');
+        this.audio.impact(hit.point, p.kind);
         this.onImpact?.(hit.point, hit.face?.normal, p);
         this.stuck.push(p);
       }
@@ -343,14 +365,15 @@ export class Player {
     const isBow = this.weapon === 'bow';
     let want = this.faceYaw;
     // archers stand side-on: left shoulder toward the target
-    if (combat) want = this.yaw + Math.PI + (isBow ? -1.05 : -0.35);
+    if (this.climbing) want = this.yaw + Math.PI;
+    else if (combat) want = this.yaw + Math.PI + (isBow ? -1.05 : -0.35);
     else if (hs > 0.3) want = Math.atan2(this.vel.x, this.vel.z);
     let dh = want - this.faceYaw; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
     this.faceYaw += dh * Math.min(1, dt * (combat ? 16 : 10));
     av.root.position.copy(this.pos);
     av.root.rotation.set(0, this.faceYaw, 0);
     // animation
-    const anim = this.dead ? 'idle' : this.crouch ? (hs > 0.2 ? 'walk' : 'sneak_pose') : hs > 4.5 ? 'run' : hs > 0.25 ? 'walk' : 'idle';
+    const anim = this.dead ? 'idle' : this.climbing ? 'walk' : this.crouch ? (hs > 0.2 ? 'walk' : 'sneak_pose') : hs > 4.5 ? 'run' : hs > 0.25 ? 'walk' : 'idle';
     av.play(anim, 0.25, anim === 'walk' ? Math.max(0.5, hs / (this.crouch ? 2.2 : 1.6)) : anim === 'run' ? hs / 6 : 1);
     av.mixer.update(dt);
     const low = this.prone ? 0.32 : this.crouch ? (this.disguised ? 0.55 : 0.72) : 1;
@@ -504,7 +527,8 @@ export class Player {
       this.camera.position.copy(this._cam);
       this.avatar.root.visible = this.avatar.root.visible && this._cam.distanceTo(pivot) > 0.55;
       this.camera.quaternion.copy(qc);
-      this.camera.fov = THREE.MathUtils.lerp(62, 48, this.aim);
+      this._sprintFov = THREE.MathUtils.lerp(this._sprintFov || 0, this.sprinting && (this.moving || 0) > 4 ? 7 : 0, Math.min(1, dt * 4));
+      this.camera.fov = THREE.MathUtils.lerp(62 + this._sprintFov, 48, this.aim);
       this.camera.updateProjectionMatrix();
     }
   }

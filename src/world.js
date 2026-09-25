@@ -350,8 +350,10 @@ export async function buildWorld(scene, renderer, onProgress) {
     scene.add(s, rope);
   }
   const cheeseMat = new THREE.MeshStandardMaterial({ color: 0xd8c690, roughness: 0.7 });
+  W.cheeseWheels = [];
   for (let i = 0; i < 9; i++) {
     const w = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.48, 0.28, 24), cheeseMat);
+    W.cheeseWheels.push(w);
     w.position.set(15 + (i % 3) * 1.0 - 1, floorHeightAt(15, 2) + 0.14 + Math.floor(i / 3) * 0.29, 2 + (i % 3) * 0.3);
     w.castShadow = true; w.receiveShadow = true;
     scene.add(w);

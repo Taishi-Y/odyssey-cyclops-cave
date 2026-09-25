@@ -18,6 +18,11 @@ Open http://127.0.0.1:5188/ (Chrome recommended). Add `?q=low` if it runs slowly
 - F: knock on a nearby wall to lure the giant; stones (3) make noise where they land
 - X: GTA V-style switch to another crewman (sky-cam transition)
 - Soliton radar (top right) shows the giant's field of view; getting seen triggers "!" and the ALERT / EVASION / CAUTION phases
+- Awareness meter (The Last of Us / Assassin's Creed): fills white, orange, red as the giant notices you; crouch next to a straw pile to hide
+- Caught? Mash E / Space (tap on phones) to break free (God of War style). Blinding the giant is a timing strike: press E when the rings meet
+- Push into a rock face to climb it (Zelda), eat cheese to heal, pick up arrows and stones
+- P: photo mode (free camera, depth of field, filters, save PNG)
+- Phones vibrate on footsteps, hits and grabs
 - V: switch between third-person (default) and first-person camera
 
 ## Story

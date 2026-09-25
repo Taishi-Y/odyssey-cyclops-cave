@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   EffectComposer, RenderPass, EffectPass, BloomEffect, ToneMappingEffect, ToneMappingMode, VignetteEffect,
-  NoiseEffect, BlendFunction, ChromaticAberrationEffect, SMAAEffect, BrightnessContrastEffect, HueSaturationEffect, Effect,
+  NoiseEffect, BlendFunction, ChromaticAberrationEffect, SMAAEffect, BrightnessContrastEffect, HueSaturationEffect, Effect, DepthOfFieldEffect,
 } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
 
@@ -9,7 +9,7 @@ import { N8AOPostPass } from 'n8ao';
 class FilmGradeEffect extends Effect {
   constructor() {
     super('FilmGrade', `
-      uniform float uTime; uniform float uShake; uniform float uFlash;
+      uniform float uTime; uniform float uShake; uniform float uFlash; uniform float uFilter; uniform float uExposure;
       vec3 filmic(vec3 c){
         float l = dot(c, vec3(0.2126,0.7152,0.0722));
         vec3 shadowTint = vec3(0.86,1.0,1.04);
@@ -25,8 +25,13 @@ class FilmGradeEffect extends Effect {
         float l = dot(c, vec3(0.3,0.6,0.1));
         c += vec3(0.06,0.012,0.0) * smoothstep(0.7, 1.0, l);
         c += vec3(uFlash);
+        c *= exp2(uExposure * 2.0);
+        float g = dot(c, vec3(0.299, 0.587, 0.114));
+        if (uFilter > 0.5 && uFilter < 1.5) c = vec3(pow(g, 0.9)) * vec3(1.02, 1.0, 0.97);          // black & white
+        else if (uFilter > 1.5 && uFilter < 2.5) c = mix(c, g * vec3(1.35, 0.85, 0.45), 0.55);     // firelight
+        else if (uFilter > 2.5) c = mix(c, g * vec3(0.55, 0.95, 1.15), 0.6);                       // teal night
         outputColor = vec4(c, inputColor.a);
-      }`, { uniforms: new Map([['uTime', new THREE.Uniform(0)], ['uShake', new THREE.Uniform(0)], ['uFlash', new THREE.Uniform(0)]]) });
+      }`, { uniforms: new Map([['uTime', new THREE.Uniform(0)], ['uShake', new THREE.Uniform(0)], ['uFlash', new THREE.Uniform(0)], ['uFilter', new THREE.Uniform(0)], ['uExposure', new THREE.Uniform(0)]]) });
   }
 }
 
@@ -78,10 +83,14 @@ export function createComposer(renderer, scene, camera) {
   noise.blendMode.opacity.value = 0.22;
   const smaa = new SMAAEffect();
   composer.addPass(new EffectPass(camera, new SanitizeEffect()));
+  // photo-mode depth of field (off during play)
+  const dofEffect = new DepthOfFieldEffect(camera, { focusDistance: 6, focusRange: 2, bokehScale: 3, resolutionScale: 0.75 });
+  const dof = new EffectPass(camera, dofEffect); dof.enabled = false;
+  composer.addPass(dof);
   composer.addPass(new EffectPass(camera, bloom));
   composer.addPass(new EffectPass(camera, tone, grade, bc, hs, vignette));
   composer.addPass(new EffectPass(camera, ca));
   composer.addPass(new EffectPass(camera, noise));
   composer.addPass(new EffectPass(camera, smaa));
-  return { composer, bloom, grade, vignette, ao, ca, hs };
+  return { composer, bloom, grade, vignette, ao, ca, hs, dof, dofEffect };
 }
