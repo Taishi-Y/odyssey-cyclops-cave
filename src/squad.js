@@ -66,9 +66,8 @@ function shoutOrder(G, order, voice, pos) {
 // now and then one man roars back ("YES!!", "TOGETHER!!") in their own voices, each a different word, loosely timed
 function acknowledge(G, leader, delay) {
   const A = G.audio; if (!A.ctx || !A.orderBufs) return;
-  if (Math.random() < 0.3) return; // sometimes nobody answers
-  const men = G.soldiers.filter((s) => s.alive && s !== leader && s.state === 'fight')
-    .sort(() => Math.random() - 0.5).slice(0, Math.random() < 0.5 ? 1 : 2);
+    const men = G.soldiers.filter((s) => s.alive && s !== leader && s.state === 'fight')
+    .sort(() => Math.random() - 0.5).slice(0, Math.random() < 0.5 ? 2 : 3);
   const used = new Set(), leaderV = leader ? voiceKey(LEADER_VOICE[leader.name] || 'crewC') : 'odysseus';
   let t = delay + R(0, 0.4);
   for (const s of men) {

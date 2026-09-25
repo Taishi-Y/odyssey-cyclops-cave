@@ -6,7 +6,7 @@ const R = (a, b) => a + Math.random() * (b - a);
 const CREW = ['deep2', 'deep3', 'crewC', 'crewD', 'crewE', 'crewF', 'tenor', 'mid', 'wiry', 'maniac', 'zealot']; // manifest index -> voice name (J laughs like a madman, K shrieks prayers)
 export const voiceKey = (v) => (typeof v === 'number' ? CREW[v] : v) ?? 'anon';
 const GAP = 0.35;   // a voice rests at least this long between two takes
-const BUSY = 4;     // at most this many panic barks sound at once
+const BUSY = 8;     // at most this many panic barks sound at once
 
 export function installVoices(Audio) {
   const P = Audio.prototype;
@@ -88,21 +88,18 @@ export function crewBark(game, cat, { n = 3, near = null, who = null, delay = 0,
   const A = game.audio; if (!A.ctx || !A.crewManifest) return;
   const now = game.time, cd = (game._barkCd ||= {});
   if (cd[cat] > now) return;
-  if (!who) {
-    if ((game._barkAny || 0) > now) return;          // someone just started shouting: give him a beat
-    if (Math.random() < 0.05) { cd[cat] = now + R(1, 2); return; } // now and then nobody answers
-  }
-  cd[cat] = now + (who ? cooldown : Math.max(cooldown * 0.5, 1.2) + R(0, 1));
+  cd[cat] = now + cooldown;
   game._barkAny = now + R(0.2, 0.6);
   let men = who ? [].concat(who) : game.soldiers.filter((s) => s.alive && s.state !== 'grabbed' && s.state !== 'dead');
   if (!who) {
     const c = near || game.player.pos;
-    const k = Math.min(n, [2, 2, 3, 3][(Math.random() * 4) | 0]); // one to three men, each on his own
-    men = men.map((s) => [s, s.root.position.distanceTo(c) + Math.random() * 6]).sort((a, b) => a[1] - b[1]).map((a) => a[0]).slice(0, k + 3);
-    men = men.sort(() => Math.random() - 0.5).slice(0, k);
+    const k = n; // the full crowd shouts, each man on his own
+    men = men.map((s) => [s, s.root.position.distanceTo(c) + Math.random() * 6]).sort((a, b) => a[1] - b[1]).map((a) => a[0]).slice(0, k + 5);
+    const t1 = A.ctx.currentTime + delay; // men whose voice is free go first, so a busy voice doesn't silence the crowd
+    men = men.sort(() => Math.random() - 0.5).sort((x, y) => (A.voiceFreeAt(x.voice) > t1) - (A.voiceFreeAt(y.voice) > t1)).slice(0, k);
   }
   const t0 = A.ctx.currentTime, used = new Set();
-  let t = delay + R(0, 0.5);
+  let t = delay + R(0, 0.3);
   for (const s of men) {
     const start = t0 + t;
     if (A.voiceFreeAt(s.voice) > start) continue; // his voice is still going: he stays quiet this time
@@ -112,13 +109,13 @@ export function crewBark(game, cat, { n = 3, near = null, who = null, delay = 0,
     if (!dur) continue;
     used.add(b.t); A.markText(b.t); A.claimVoice(b.v, start, dur); A.claimVoice(s.voice, start, dur);
     A._barkEnds = (A._barkEnds || []).filter((e) => e > t0); A._barkEnds.push(start + dur);
-    t += Math.max(spread, 0.5) * R(0.6, 1.6); // loose, uneven gaps instead of a chorus
+    t += R(0.15, Math.max(spread, 0.4)); // overlapping, uneven starts
   }
 }
 
 // Idle chatter, called every frame. When nothing else is being said the men talk among themselves:
-//   peace : before the giant comes home, relaxed banter every few seconds, often answered by a mate
-//   tense : the giant is inside but calm (no alert, nobody being grabbed), scared whispers now and then
+//   peace : before the giant comes home, relaxed banter back to back, often answered by a mate
+//   tense : the giant is inside but calm (no alert, nobody being grabbed), scared whispers, one after another
 // Never over a scripted line, a bark or an order, and never a voice over itself.
 export function crewChatter(game, dt) {
   const A = game.audio; if (!A.ctx || !A.chatManifest) return;
@@ -130,7 +127,7 @@ export function crewChatter(game, dt) {
   const C = (game._chat ||= { t: 3, reply: null });
   if (!mood) { C.t = Math.max(C.t, 4); C.reply = null; return; }
   // someone else has the floor: wait
-  if ((A._lineSrcEnd || 0) > now - 0.5 || A.barksPlaying(now) > 0 || (game._barkAny || 0) > game.time - 1.5) { C.t = Math.max(C.t, 1.5); return; }
+  if ((A._lineSrcEnd || 0) > now || A.barksPlaying(now) > 0) { C.t = Math.max(C.t, 0.3); return; }
   C.t -= dt; if (C.t > 0) return;
   const pool = A.chatManifest[mood] || [];
   const men = game.soldiers.filter((s) => s.alive && s.state !== 'grabbed' && s.state !== 'dead' && !s.escaped && s.voice != null && s.chore?.kind !== 'eat');
@@ -152,7 +149,7 @@ export function crewChatter(game, dt) {
   if (!dur) { C.t = 1; return; }
   A.markText(c.t); A.claimVoice(s.voice, now, dur);
   // next line: often a quick answer from someone nearby, else a pause
-  const answer = Math.random() < (peace ? 0.55 : 0.35);
+  const answer = Math.random() < (peace ? 0.6 : 0.5);
   C.reply = answer ? s : null;
-  C.t = dur + (answer ? R(0.3, 1.0) : peace ? R(2, 5) : R(6, 12));
+  C.t = dur + (answer ? R(0.1, 0.5) : peace ? R(0.3, 1.0) : R(0.6, 1.8)); // someone is always talking
 }
