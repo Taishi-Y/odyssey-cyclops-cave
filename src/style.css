@@ -69,4 +69,4 @@ body.touch #weapon b { font-size: 15px; }
 body.touch #status { left: 16px; bottom: auto; top: 70px; font-size: 12px; }
 body.touch #menu .title { font-size: 44px; }
 body.touch #menu .keys { display: none; }
-}
+body.touch #prompt { top: 62%; font-size: 14px; }
