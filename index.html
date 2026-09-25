@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>ODYSSEY: The Cave of Polyphemus</title>
+<link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="objective"></div>
+  <div id="subtitle"></div>
+  <div id="crosshair"><div class="ring"></div></div>
+  <div id="weapon"></div>
+  <div id="prompt"></div>
+  <div id="status"></div>
+  <div id="damage"></div>
+  <div id="fade"></div>
+</div>
+<div id="menu">
+  <div class="title">ODYSSEY</div>
+  <div class="sub">THE CAVE OF POLYPHEMUS</div>
+  <div id="loadbar"><div></div></div>
+  <div id="loadtxt">Carving the cave...</div>
+  <button id="start" disabled>CLICK TO BEGIN</button>
+  <div class="keys">
+    WASD move / Shift run / Ctrl or C crouch / Space jump<br />
+    Left click attack (bow: hold to draw, release to loose / spear: throw) / Right click aim<br />
+    1 bow / 2 spear / E interact, pick up, use / V switch camera<br />Jump, then aim the bow in mid-air for slow motion (uses stamina)
+  </div>
+</div>
+<script>window.__errs=[];addEventListener("error",e=>__errs.push(e.message+" @"+(e.filename||"")+":"+e.lineno));addEventListener("unhandledrejection",e=>__errs.push("REJ "+(e.reason&&e.reason.stack||e.reason)));</script>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
