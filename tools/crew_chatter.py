@@ -11,7 +11,7 @@ Two moods:
 Unlike the barks these are spoken, not screamed, so there is no scream judge: one take each.
 Output: public/assets/voice/chat/*.mp3 + public/assets/voice/chat/manifest.json
 """
-import base64, json, pathlib, random, subprocess, sys, urllib.request, urllib.error, concurrent.futures as cf
+import base64, hashlib, json, pathlib, random, subprocess, sys, urllib.request, urllib.error, concurrent.futures as cf
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "public" / "assets" / "voice" / "chat"; OUT.mkdir(parents=True, exist_ok=True)
@@ -46,15 +46,24 @@ LINES = {
         "Ha! You've got cheese in your beard.", "My wife would never believe this.", "Fill your sacks, lads.",
         "These pens are cleaner than my house.", "Is anyone keeping watch?", "Gods, that's good cheese.",
         "Where's the owner, do you think?", "One more wheel and we go.", "Hand me that bucket.",
+        "Try this one, it's softer.", "We'll feast tonight on the ship.", "Who's got a knife? This rope won't give.",
+        "Hey, don't step on the lambs.", "Polites, you eat like a pig.", "Smell that? Fresh milk.",
+        "I've never seen a pen this big.", "Pass me a piece, will you?", "Odysseus wants to meet the owner. Of course he does.",
+        "Leave some room in the boat for the wine.", "It's warm in here, at least.", "These buckets are huge. Look at this.",
+        "Ha! Look at him go.", "Quiet, I think I heard something. No, never mind.",
     ],
     "tense": [
         "Shh. Keep your voice down.", "Is he asleep?", "I can hear him breathing.", "Don't move. Don't even breathe.",
         "What do we do now?", "Stay close to the wall.", "My legs won't stop shaking.", "Athena, protect us.",
         "Where's Odysseus?", "He can't see us here. Can he?", "I want to go home.", "Quiet! He turned his head.",
         "We should never have come in here.", "How long until morning?", "Stay together.", "Did he hear that?",
+        "Don't look at him.", "Move slowly. Slowly.", "He ate them. He just ate them.", "Keep your head down.",
+        "We need a plan.", "I can't feel my hands.", "There has to be another way out.", "Pray he sleeps.",
+        "Don't let the sheep give us away.", "Breathe. Just breathe.", "Is he looking this way?", "Get behind the rocks.",
+        "I can smell him from here.", "Not a sound. Not one.", "What is Odysseus waiting for?", "We'll get out. We will.",
     ],
 }
-TAKES = {"peace": 24, "tense": 22}
+TAKES = {"peace": 48, "tense": 54}
 
 
 def tts(text, style, voice):
@@ -73,11 +82,11 @@ def tts(text, style, voice):
 
 def make(job):
     name, text, style, voice, mood = job
-    raw = RAW / f"{name}.wav"
+    raw = RAW / f"{name}_{hashlib.md5((voice + text + style).encode()).hexdigest()[:8]}.wav"  # cache keyed by content, not just slot
     if not raw.exists() or "--force" in sys.argv:
         raw.write_bytes(tts(text, style, voice))
-    # whispers are normalised quieter than the peaceful talk; both well under the screamed barks (-14 LUFS)
-    lufs = -20 if mood == "peace" else -24
+    # a little under the screamed barks (-14 LUFS); whispers only slightly quieter than the talk so they still carry
+    lufs = -16 if mood == "peace" else -17
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(raw), "-af",
                     f"silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,loudnorm=I={lufs}:TP=-2",
                     "-ar", "24000", "-ac", "1", "-b:a", "48k", str(OUT / f"{name}.mp3")], check=True)

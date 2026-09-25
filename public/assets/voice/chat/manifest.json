@@ -1,236 +1,516 @@
 {
  "peace": [
   {
-   "f": "peace_00_crewE.mp3",
+   "f": "peace_00_wiry.mp3",
+   "v": 8,
+   "t": "Must be a shepherd. A rich one."
+  },
+  {
+   "f": "peace_01_crewE.mp3",
    "v": 4,
-   "t": "My wife would never believe this."
+   "t": "Fill your sacks, lads."
   },
   {
-   "f": "peace_01_deep3.mp3",
-   "v": 1,
-   "t": "Maybe he'll trade us some wine for it."
+   "f": "peace_02_tenor.mp3",
+   "v": 6,
+   "t": "Leave some room in the boat for the wine."
   },
   {
-   "f": "peace_02_crewC.mp3",
-   "v": 2,
+   "f": "peace_03_crewE.mp3",
+   "v": 4,
    "t": "Where's the owner, do you think?"
   },
   {
-   "f": "peace_03_crewD.mp3",
-   "v": 3,
-   "t": "Careful with that knot, don't drop it."
+   "f": "peace_04_deep3.mp3",
+   "v": 1,
+   "t": "Hey, don't step on the lambs."
   },
   {
-   "f": "peace_04_crewE.mp3",
+   "f": "peace_05_crewE.mp3",
    "v": 4,
-   "t": "Whoever lives here eats better than we do."
+   "t": "Smell that? Fresh milk."
   },
   {
-   "f": "peace_05_wiry.mp3",
+   "f": "peace_06_deep3.mp3",
+   "v": 1,
+   "t": "I've never seen a pen this big."
+  },
+  {
+   "f": "peace_07_wiry.mp3",
    "v": 8,
+   "t": "Ha! Look at him go."
+  },
+  {
+   "f": "peace_08_crewD.mp3",
+   "v": 3,
+   "t": "We'll feast tonight on the ship."
+  },
+  {
+   "f": "peace_09_tenor.mp3",
+   "v": 6,
+   "t": "Try this one, it's softer."
+  },
+  {
+   "f": "peace_10_wiry.mp3",
+   "v": 8,
+   "t": "Gods, that's good cheese."
+  },
+  {
+   "f": "peace_11_tenor.mp3",
+   "v": 6,
+   "t": "Maybe he'll trade us some wine for it."
+  },
+  {
+   "f": "peace_12_deep2.mp3",
+   "v": 0,
    "t": "I could get used to this."
   },
   {
-   "f": "peace_06_deep2.mp3",
+   "f": "peace_13_crewD.mp3",
+   "v": 3,
+   "t": "It's warm in here, at least."
+  },
+  {
+   "f": "peace_14_tenor.mp3",
+   "v": 6,
+   "t": "Whoever lives here eats better than we do."
+  },
+  {
+   "f": "peace_15_mid.mp3",
+   "v": 7,
+   "t": "These pens are cleaner than my house."
+  },
+  {
+   "f": "peace_16_deep2.mp3",
+   "v": 0,
+   "t": "Elpenor, save some for the rest of us!"
+  },
+  {
+   "f": "peace_17_deep2.mp3",
+   "v": 0,
+   "t": "Pass me a piece, will you?"
+  },
+  {
+   "f": "peace_18_deep3.mp3",
+   "v": 1,
+   "t": "Look at the size of these cheeses!"
+  },
+  {
+   "f": "peace_19_crewE.mp3",
+   "v": 4,
+   "t": "Ha! You've got cheese in your beard."
+  },
+  {
+   "f": "peace_20_mid.mp3",
+   "v": 7,
+   "t": "One more wheel and we go."
+  },
+  {
+   "f": "peace_21_deep2.mp3",
+   "v": 0,
+   "t": "Grab a lamb or two, nobody will miss them."
+  },
+  {
+   "f": "peace_22_mid.mp3",
+   "v": 7,
+   "t": "My wife would never believe this."
+  },
+  {
+   "f": "peace_23_crewD.mp3",
+   "v": 3,
+   "t": "Quiet, I think I heard something. No, never mind."
+  },
+  {
+   "f": "peace_24_deep2.mp3",
+   "v": 0,
+   "t": "Polites, you eat like a pig."
+  },
+  {
+   "f": "peace_25_crewC.mp3",
+   "v": 2,
+   "t": "Smells like a goat's armpit in here."
+  },
+  {
+   "f": "peace_26_crewF.mp3",
+   "v": 5,
+   "t": "Odysseus wants to meet the owner. Of course he does."
+  },
+  {
+   "f": "peace_27_crewC.mp3",
+   "v": 2,
+   "t": "Hand me that bucket."
+  },
+  {
+   "f": "peace_28_crewF.mp3",
+   "v": 5,
+   "t": "Is anyone keeping watch?"
+  },
+  {
+   "f": "peace_29_crewF.mp3",
+   "v": 5,
+   "t": "Careful with that knot, don't drop it."
+  },
+  {
+   "f": "peace_30_mid.mp3",
+   "v": 7,
+   "t": "Who's got a knife? This rope won't give."
+  },
+  {
+   "f": "peace_31_crewC.mp3",
+   "v": 2,
+   "t": "These buckets are huge. Look at this."
+  },
+  {
+   "f": "peace_32_crewF.mp3",
+   "v": 5,
+   "t": "Must be a shepherd. A rich one."
+  },
+  {
+   "f": "peace_33_deep2.mp3",
    "v": 0,
    "t": "Fill your sacks, lads."
   },
   {
-   "f": "peace_07_crewC.mp3",
-   "v": 2,
-   "t": "Must be a shepherd. A rich one."
-  },
-  {
-   "f": "peace_08_crewE.mp3",
-   "v": 4,
-   "t": "Grab a lamb or two, nobody will miss them."
-  },
-  {
-   "f": "peace_09_mid.mp3",
-   "v": 7,
-   "t": "Is anyone keeping watch?"
-  },
-  {
-   "f": "peace_10_deep3.mp3",
+   "f": "peace_34_deep3.mp3",
    "v": 1,
-   "t": "Ha! You've got cheese in your beard."
+   "t": "Leave some room in the boat for the wine."
   },
   {
-   "f": "peace_11_crewC.mp3",
-   "v": 2,
-   "t": "These pens are cleaner than my house."
-  },
-  {
-   "f": "peace_12_crewD.mp3",
-   "v": 3,
-   "t": "Elpenor, save some for the rest of us!"
-  },
-  {
-   "f": "peace_13_deep2.mp3",
-   "v": 0,
-   "t": "Gods, that's good cheese."
-  },
-  {
-   "f": "peace_14_deep3.mp3",
-   "v": 1,
-   "t": "Hand me that bucket."
-  },
-  {
-   "f": "peace_15_tenor.mp3",
-   "v": 6,
-   "t": "Smells like a goat's armpit in here."
-  },
-  {
-   "f": "peace_16_crewF.mp3",
-   "v": 5,
-   "t": "One more wheel and we go."
-  },
-  {
-   "f": "peace_17_tenor.mp3",
-   "v": 6,
-   "t": "Look at the size of these cheeses!"
-  },
-  {
-   "f": "peace_18_deep2.mp3",
-   "v": 0,
-   "t": "My wife would never believe this."
-  },
-  {
-   "f": "peace_19_mid.mp3",
-   "v": 7,
-   "t": "Maybe he'll trade us some wine for it."
-  },
-  {
-   "f": "peace_20_crewD.mp3",
-   "v": 3,
+   "f": "peace_35_wiry.mp3",
+   "v": 8,
    "t": "Where's the owner, do you think?"
   },
   {
-   "f": "peace_21_crewF.mp3",
-   "v": 5,
-   "t": "Careful with that knot, don't drop it."
+   "f": "peace_36_tenor.mp3",
+   "v": 6,
+   "t": "Hey, don't step on the lambs."
   },
   {
-   "f": "peace_22_wiry.mp3",
+   "f": "peace_37_crewE.mp3",
+   "v": 4,
+   "t": "Smell that? Fresh milk."
+  },
+  {
+   "f": "peace_38_crewD.mp3",
+   "v": 3,
+   "t": "I've never seen a pen this big."
+  },
+  {
+   "f": "peace_39_mid.mp3",
+   "v": 7,
+   "t": "Ha! Look at him go."
+  },
+  {
+   "f": "peace_40_crewC.mp3",
+   "v": 2,
+   "t": "We'll feast tonight on the ship."
+  },
+  {
+   "f": "peace_41_crewD.mp3",
+   "v": 3,
+   "t": "Try this one, it's softer."
+  },
+  {
+   "f": "peace_42_deep3.mp3",
+   "v": 1,
+   "t": "Gods, that's good cheese."
+  },
+  {
+   "f": "peace_43_crewF.mp3",
+   "v": 5,
+   "t": "Maybe he'll trade us some wine for it."
+  },
+  {
+   "f": "peace_44_crewC.mp3",
+   "v": 2,
+   "t": "I could get used to this."
+  },
+  {
+   "f": "peace_45_crewC.mp3",
+   "v": 2,
+   "t": "It's warm in here, at least."
+  },
+  {
+   "f": "peace_46_wiry.mp3",
    "v": 8,
    "t": "Whoever lives here eats better than we do."
   },
   {
-   "f": "peace_23_crewF.mp3",
-   "v": 5,
-   "t": "I could get used to this."
+   "f": "peace_47_deep3.mp3",
+   "v": 1,
+   "t": "These pens are cleaner than my house."
   }
  ],
  "tense": [
   {
-   "f": "tense_00_tenor.mp3",
-   "v": 6,
-   "t": "Is he asleep?"
-  },
-  {
-   "f": "tense_01_crewD.mp3",
-   "v": 3,
-   "t": "Did he hear that?"
-  },
-  {
-   "f": "tense_02_mid.mp3",
+   "f": "tense_00_mid.mp3",
    "v": 7,
-   "t": "Where's Odysseus?"
+   "t": "There has to be another way out."
   },
   {
-   "f": "tense_03_crewD.mp3",
-   "v": 3,
-   "t": "What do we do now?"
+   "f": "tense_01_deep2.mp3",
+   "v": 0,
+   "t": "Pray he sleeps."
+  },
+  {
+   "f": "tense_02_crewF.mp3",
+   "v": 5,
+   "t": "I can't feel my hands."
+  },
+  {
+   "f": "tense_03_crewF.mp3",
+   "v": 5,
+   "t": "He can't see us here. Can he?"
   },
   {
    "f": "tense_04_deep2.mp3",
    "v": 0,
-   "t": "My legs won't stop shaking."
+   "t": "Breathe. Just breathe."
   },
   {
    "f": "tense_05_deep3.mp3",
    "v": 1,
-   "t": "Stay close to the wall."
-  },
-  {
-   "f": "tense_06_deep2.mp3",
-   "v": 0,
-   "t": "He can't see us here. Can he?"
-  },
-  {
-   "f": "tense_07_deep3.mp3",
-   "v": 1,
-   "t": "Athena, protect us."
-  },
-  {
-   "f": "tense_08_crewC.mp3",
-   "v": 2,
-   "t": "Quiet! He turned his head."
-  },
-  {
-   "f": "tense_09_mid.mp3",
-   "v": 7,
-   "t": "We should never have come in here."
-  },
-  {
-   "f": "tense_10_wiry.mp3",
-   "v": 8,
-   "t": "Don't move. Don't even breathe."
-  },
-  {
-   "f": "tense_11_crewD.mp3",
-   "v": 3,
-   "t": "Stay together."
-  },
-  {
-   "f": "tense_12_crewF.mp3",
-   "v": 5,
-   "t": "I want to go home."
-  },
-  {
-   "f": "tense_13_crewE.mp3",
-   "v": 4,
-   "t": "How long until morning?"
-  },
-  {
-   "f": "tense_14_crewC.mp3",
-   "v": 2,
-   "t": "Shh. Keep your voice down."
-  },
-  {
-   "f": "tense_15_deep3.mp3",
-   "v": 1,
-   "t": "I can hear him breathing."
-  },
-  {
-   "f": "tense_16_crewE.mp3",
-   "v": 4,
    "t": "Is he asleep?"
   },
   {
-   "f": "tense_17_wiry.mp3",
-   "v": 8,
-   "t": "Did he hear that?"
+   "f": "tense_06_mid.mp3",
+   "v": 7,
+   "t": "Stay close to the wall."
   },
   {
-   "f": "tense_18_crewF.mp3",
-   "v": 5,
+   "f": "tense_07_wiry.mp3",
+   "v": 8,
    "t": "Where's Odysseus?"
   },
   {
-   "f": "tense_19_crewC.mp3",
+   "f": "tense_08_deep3.mp3",
+   "v": 1,
+   "t": "Don't move. Don't even breathe."
+  },
+  {
+   "f": "tense_09_crewC.mp3",
    "v": 2,
+   "t": "Don't look at him."
+  },
+  {
+   "f": "tense_10_deep2.mp3",
+   "v": 0,
+   "t": "What is Odysseus waiting for?"
+  },
+  {
+   "f": "tense_11_crewC.mp3",
+   "v": 2,
+   "t": "I want to go home."
+  },
+  {
+   "f": "tense_12_crewD.mp3",
+   "v": 3,
+   "t": "Get behind the rocks."
+  },
+  {
+   "f": "tense_13_crewC.mp3",
+   "v": 2,
+   "t": "Is he looking this way?"
+  },
+  {
+   "f": "tense_14_crewD.mp3",
+   "v": 3,
+   "t": "How long until morning?"
+  },
+  {
+   "f": "tense_15_deep2.mp3",
+   "v": 0,
+   "t": "Move slowly. Slowly."
+  },
+  {
+   "f": "tense_16_crewD.mp3",
+   "v": 3,
+   "t": "Did he hear that?"
+  },
+  {
+   "f": "tense_17_tenor.mp3",
+   "v": 6,
    "t": "What do we do now?"
   },
   {
-   "f": "tense_20_deep2.mp3",
-   "v": 0,
+   "f": "tense_18_deep3.mp3",
+   "v": 1,
+   "t": "Stay together."
+  },
+  {
+   "f": "tense_19_crewF.mp3",
+   "v": 5,
+   "t": "Don't let the sheep give us away."
+  },
+  {
+   "f": "tense_20_crewE.mp3",
+   "v": 4,
+   "t": "Quiet! He turned his head."
+  },
+  {
+   "f": "tense_21_wiry.mp3",
+   "v": 8,
+   "t": "Keep your head down."
+  },
+  {
+   "f": "tense_22_tenor.mp3",
+   "v": 6,
+   "t": "Shh. Keep your voice down."
+  },
+  {
+   "f": "tense_23_crewC.mp3",
+   "v": 2,
+   "t": "Athena, protect us."
+  },
+  {
+   "f": "tense_24_crewE.mp3",
+   "v": 4,
+   "t": "We need a plan."
+  },
+  {
+   "f": "tense_25_mid.mp3",
+   "v": 7,
+   "t": "We'll get out. We will."
+  },
+  {
+   "f": "tense_26_tenor.mp3",
+   "v": 6,
    "t": "My legs won't stop shaking."
   },
   {
-   "f": "tense_21_tenor.mp3",
+   "f": "tense_27_crewF.mp3",
+   "v": 5,
+   "t": "I can smell him from here."
+  },
+  {
+   "f": "tense_28_deep3.mp3",
+   "v": 1,
+   "t": "Not a sound. Not one."
+  },
+  {
+   "f": "tense_29_mid.mp3",
+   "v": 7,
+   "t": "I can hear him breathing."
+  },
+  {
+   "f": "tense_30_crewF.mp3",
+   "v": 5,
+   "t": "We should never have come in here."
+  },
+  {
+   "f": "tense_31_crewE.mp3",
+   "v": 4,
+   "t": "He ate them. He just ate them."
+  },
+  {
+   "f": "tense_32_crewC.mp3",
+   "v": 2,
+   "t": "There has to be another way out."
+  },
+  {
+   "f": "tense_33_crewE.mp3",
+   "v": 4,
+   "t": "Pray he sleeps."
+  },
+  {
+   "f": "tense_34_crewC.mp3",
+   "v": 2,
+   "t": "I can't feel my hands."
+  },
+  {
+   "f": "tense_35_crewD.mp3",
+   "v": 3,
+   "t": "He can't see us here. Can he?"
+  },
+  {
+   "f": "tense_36_tenor.mp3",
+   "v": 6,
+   "t": "Breathe. Just breathe."
+  },
+  {
+   "f": "tense_37_tenor.mp3",
+   "v": 6,
+   "t": "Is he asleep?"
+  },
+  {
+   "f": "tense_38_tenor.mp3",
    "v": 6,
    "t": "Stay close to the wall."
+  },
+  {
+   "f": "tense_39_wiry.mp3",
+   "v": 8,
+   "t": "Where's Odysseus?"
+  },
+  {
+   "f": "tense_40_mid.mp3",
+   "v": 7,
+   "t": "Don't move. Don't even breathe."
+  },
+  {
+   "f": "tense_41_wiry.mp3",
+   "v": 8,
+   "t": "Don't look at him."
+  },
+  {
+   "f": "tense_42_deep2.mp3",
+   "v": 0,
+   "t": "What is Odysseus waiting for?"
+  },
+  {
+   "f": "tense_43_deep3.mp3",
+   "v": 1,
+   "t": "I want to go home."
+  },
+  {
+   "f": "tense_44_deep3.mp3",
+   "v": 1,
+   "t": "Get behind the rocks."
+  },
+  {
+   "f": "tense_45_crewF.mp3",
+   "v": 5,
+   "t": "Is he looking this way?"
+  },
+  {
+   "f": "tense_46_crewD.mp3",
+   "v": 3,
+   "t": "How long until morning?"
+  },
+  {
+   "f": "tense_47_wiry.mp3",
+   "v": 8,
+   "t": "Move slowly. Slowly."
+  },
+  {
+   "f": "tense_48_mid.mp3",
+   "v": 7,
+   "t": "Did he hear that?"
+  },
+  {
+   "f": "tense_49_crewD.mp3",
+   "v": 3,
+   "t": "What do we do now?"
+  },
+  {
+   "f": "tense_50_crewE.mp3",
+   "v": 4,
+   "t": "Stay together."
+  },
+  {
+   "f": "tense_51_deep2.mp3",
+   "v": 0,
+   "t": "Don't let the sheep give us away."
+  },
+  {
+   "f": "tense_52_crewE.mp3",
+   "v": 4,
+   "t": "Quiet! He turned his head."
+  },
+  {
+   "f": "tense_53_wiry.mp3",
+   "v": 8,
+   "t": "Keep your head down."
   }
  ]
 }
