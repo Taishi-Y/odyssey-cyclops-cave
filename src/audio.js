@@ -23,6 +23,24 @@ export class Audio {
     this.noiseBuf = this.makeNoise(3);
     this.brownBuf = this.makeBrown(4);
     this.startAmbience();
+    this.loadVoice();
+  }
+  // Polyphemus' real voice (Bill Irwin, from the YouTube clip cTEaP8VxN6o): the prayer to Poseidon.
+  // Phrases (sec): 0.15-2.35 / 2.5-6.65 / 6.75-10.15 / 10.2-13.6
+  loadVoice() {
+    fetch('assets/audio/cyclops_voice.mp3').then((r) => r.arrayBuffer()).then((a) => this.ctx.decodeAudioData(a)).then((b) => (this.voiceBuf = b)).catch(() => {});
+  }
+  // play a slice of the real voice, spatialised like the other giant sounds
+  voice(pos, { from = 0, to = null, rate = 1, vol = 1, wet = 0.6, minG = 0.5 } = {}) {
+    if (!this.ctx || !this.voiceBuf) return 0;
+    const ctx = this.ctx, t = ctx.currentTime, { g: sg, pan } = this.spatial(pos);
+    const end = Math.min(to ?? this.voiceBuf.duration, this.voiceBuf.duration), len = end - from;
+    const s = ctx.createBufferSource(); s.buffer = this.voiceBuf; s.playbackRate.value = rate;
+    const g = ctx.createGain(), peak = vol * Math.max(minG, sg), real = len / rate;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.06);
+    g.gain.setValueAtTime(peak, t + Math.max(0.07, real - 0.25)); g.gain.exponentialRampToValueAtTime(0.0001, t + real);
+    s.connect(g); this.out(g, wet, pan * 0.6); s.start(t, from, len);
+    return real;
   }
   impulse(sec, decay) {
     const ctx = this.ctx, len = ctx.sampleRate * sec, b = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -142,6 +160,15 @@ export class Audio {
   // cyclops roar / groan: formant-filtered saw + noise, pitch contour
   roar(pos, { dur = 2.2, pitch = 1, vol = 1, pain = false } = {}) {
     if (!this.ctx) return;
+    // real voice on top: a sustained vowel from the clip, slowed down into a growl (pain = closer to his own pitch)
+    if (this.voiceBuf) {
+      const grains = [[0.2, 2.3], [2.6, 4.1], [6.9, 8.3], [10.3, 11.8]];
+      const [a, b] = grains[(Math.random() * grains.length) | 0];
+      const rate = (pain ? 0.9 : 0.68) * Math.min(1.15, Math.max(0.6, pitch));
+      const len = Math.min(b - a, dur * rate);
+      this.voice(pos, { from: a, to: a + len, rate, vol: 1.3 * vol, wet: 0.75 });
+      vol *= 0.45; // keep the synth underneath for weight
+    }
     const ctx = this.ctx, t = ctx.currentTime, { g: sg, pan } = this.spatial(pos);
     const out = ctx.createGain(); out.gain.setValueAtTime(0.0001, t);
     out.gain.exponentialRampToValueAtTime(1.1 * vol * Math.max(0.5, sg), t + 0.25);

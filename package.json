@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "bake": "node tools/bake-cave.mjs"
+    "bake": "node tools/bake-cave.mjs && node tools/bake-nav.mjs"
   },
   "keywords": [],
   "author": "",

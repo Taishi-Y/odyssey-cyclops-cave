@@ -103,7 +103,7 @@ export class Flock {
   }
 
   update(dt, t, ctx) {
-    const { player, cyclops, blocked } = ctx;
+    const { player, cyclops, nav } = ctx;
     const tmp = new THREE.Vector3();
     for (let i = 0; i < this.count; i++) {
       const s = this.sheep[i];
@@ -147,9 +147,11 @@ export class Flock {
         const d2 = dx * dx + dz * dz;
         if (d2 < 1.1 && d2 > 1e-4) { const d = Math.sqrt(d2); desired.x += (dx / d) * (1.05 - d) * 1.6; desired.z += (dz / d) * (1.05 - d) * 1.6; }
       }
-      if (blocked && this.mode !== 'exit') {
+      // out past the door the sheep are in the narrow slot, beyond sight: let them through
+      const free = !nav || (this.mode === 'exit' && s.pos.z > 17.5);
+      if (!free) {
         const nx = s.pos.x + desired.x * dt * 2, nz = s.pos.z + desired.z * dt * 2;
-        if (blocked(nx, nz)) desired.multiplyScalar(-0.5);
+        if (!nav.canStep(s.pos.x, s.pos.z, nx, nz)) desired.multiplyScalar(-0.5);
       }
       s.vel.lerp(desired, Math.min(1, dt * 2.5));
       const sp = s.vel.length();
@@ -158,8 +160,9 @@ export class Flock {
         let dh = h - s.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
         s.heading += dh * Math.min(1, dt * 4);
       }
-      s.pos.addScaledVector(s.vel, dt);
-      s.pos.y = floorHeightAt(s.pos.x, s.pos.z);
+      if (free) s.pos.addScaledVector(s.vel, dt);
+      else if (!nav.step(s.pos, s.vel.x * dt, s.vel.z * dt)) { s.vel.x *= -0.3; s.vel.z *= -0.3; }
+      s.pos.y = (nav && nav.floorY(s.pos.x, s.pos.z)) ?? floorHeightAt(s.pos.x, s.pos.z);
       s.phase += dt * (1 + sp * 9);
       s.graze = THREE.MathUtils.lerp(s.graze, sp < 0.1 ? 1 : 0, dt * 1.5);
       if (s.bleat > 0) { s.bleat = 0; this.onBleat?.(s.pos); }

@@ -3,6 +3,7 @@ import { loadCharacterAssets, Cyclops, Soldier } from './characters.js';
 import { Flock } from './sheep.js';
 import { floorHeightAt, LAYOUT, airDist, rockField } from './cave.js';
 import { Physics } from './physics.js';
+import { loadNav, navSeek } from './nav.js';
 import { Player } from './player.js';
 import { Input, isTouchDevice, attachTouchControls } from './input.js';
 import { Audio } from './audio.js';
@@ -41,6 +42,14 @@ export class Game {
     if (isTouchDevice()) attachTouchControls(this.input);
     this.audio = new Audio();
     this.physics = new Physics(world.colliders.filter((c) => c !== world.boulder), [world.boulder]);
+    // NPC walkability from the real rock shape (the giant, the men and the sheep must not walk through walls)
+    this.nav = await loadNav();
+    this.nav.man.addObstacles(world.colliders.filter((c) => c !== world.cave && c !== world.boulder).map((c) => {
+      const b = new THREE.Box3().setFromObject(c);
+      return { x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, r: Math.min(b.max.x - b.min.x, b.max.z - b.min.z) * 0.42 };
+    }));
+    // while the door-stone is shut nobody walks into it
+    this.nav.man.extraBlock = (x, z) => this.doorShut && z > this.world.doorClosed.z - 5.2;
     this.particles = new Particles(scene);
     this.decals = new Decals(scene);
     this.player = new Player({ camera: this.camera, scene, physics: this.physics, audio: this.audio, input: this.input });
@@ -143,6 +152,7 @@ export class Game {
     else document.documentElement.requestFullscreen?.().catch(() => {});
     this.hud.fade.style.opacity = 0;
     this.started = true;
+    document.body.classList.add('playing');
     if (this.checkpoint) this.jumpTo(this.checkpoint); else this.runIntro();
   }
 
@@ -184,7 +194,7 @@ export class Game {
     this.audio.stomp(V(0, 0, 42), 1.4); this.player.shake = 0.8;
     await this.wait(1.4);
     this.cy.root.visible = true;
-    this.placeCy(V(3, 0, 40)); this.cyState.heading = Math.PI;
+    this.placeCy(V(1.6, 0, 21)); this.cyState.heading = Math.PI;
     this.cyState.mode = 'script';
     this.soldiers.forEach((s) => { s.state = 'hide'; });
     this.setTension(0.6);
@@ -389,11 +399,12 @@ export class Game {
     this.cy.play('sad_pose', 0.1);
     this.hud.fade.style.opacity = 0;
     await this.wait(2);
-    this.audio.roar(this.cy.eyeWorld(), { dur: 3, vol: 0.9, pitch: 0.7 });
-    this.say('Father Poseidon, they blinded me…', 4.5, 'Polyphemus');
-    await this.wait(4.8);
-    this.say('Vengeance, father… vengeance for me…', 4.5, 'Polyphemus');
-    await this.wait(4.8);
+    const vlen = this.audio.voice(this.cy.eyeWorld(), { vol: 1.4, wet: 0.7, minG: 0.8 });
+    if (!vlen) this.audio.roar(this.cy.eyeWorld(), { dur: 3, vol: 0.9, pitch: 0.7 });
+    this.say('Father Poseidon, they blinded me…', vlen ? 6.5 : 4.5, 'Polyphemus');
+    await this.wait(vlen ? 6.7 : 4.8);
+    this.say(vlen ? 'Vengeance, father… vengeance for me… Poseidon, vengeance for me…' : 'Vengeance, father… vengeance for me…', vlen ? 6.8 : 4.5, 'Polyphemus');
+    await this.wait(vlen ? 7.3 : 4.8);
     this.say('It can talk. Why didn\'t it talk before?', 3.2, 'Polites');
     await this.wait(3.4);
     this.say('Do you talk to ants?', 3.5, 'Odysseus');
@@ -425,19 +436,23 @@ export class Game {
   }
 
   cyMove(dt) {
-    const st = this.cyState, r = this.cy.root;
+    const st = this.cyState, r = this.cy.root, nav = this.nav.giant;
     if (st.walkTarget) {
-      const d = flat(st.walkTarget).sub(flat(r.position));
+      // the outer tunnel is a slot far too narrow for a 13 m giant: there he just follows its centre line
+      // until he reaches the part of the tunnel he fits in; everywhere else he walks the grid path
+      const inSlot = r.position.z > 16.5;
+      const wp = inSlot ? [1.5, 15.5] : navSeek(nav, st, r.position, st.walkTarget, dt, 0.9);
+      const final = !inSlot && st.path.length <= 1;
+      const d = V(wp[0] - r.position.x, 0, wp[1] - r.position.z);
       const dist = d.length();
-      if (dist < 0.6) { st.walkTarget = null; this.cy.play('idle'); return; }
+      if (final && dist < 0.6) { st.walkTarget = null; st.path = null; this.cy.play('idle'); return; }
       st.heading = Math.atan2(d.x, d.z);
-      const sp = Math.min(st.walkSpeed, dist * 1.5);
-      const nx = r.position.x + (d.x / dist) * sp * dt, nz = r.position.z + (d.z / dist) * sp * dt;
-      if (st.noClip || walkable(nx, nz, 1.2) || nz > 12) { r.position.x = nx; r.position.z = nz; }
-      else if (walkable(nx, r.position.z, 1.2)) r.position.x = nx;
-      else if (walkable(r.position.x, nz, 1.2)) r.position.z = nz;
-      else { st.walkTarget = null; this.cy.play('idle'); }
-      r.position.y = floorHeightAt(r.position.x, r.position.z);
+      const sp = final ? Math.min(st.walkSpeed, dist * 1.5) : st.walkSpeed;
+      const dx = (d.x / Math.max(dist, 1e-4)) * sp * dt, dz = (d.z / Math.max(dist, 1e-4)) * sp * dt;
+      if (inSlot) { r.position.x += dx; r.position.z += dz; st.blockedT = 0; }
+      else if (nav.step(r.position, dx, dz)) st.blockedT = 0;
+      else if ((st.blockedT = (st.blockedT || 0) + dt) > 0.8) { st.walkTarget = null; st.path = null; st.blockedT = 0; this.cy.play('idle'); }
+      r.position.y = nav.floorY(r.position.x, r.position.z) ?? floorHeightAt(r.position.x, r.position.z);
       this.cy.play(st.walkSpeed > 3 ? 'run' : 'walk', 0.5, st.walkSpeed > 3 ? 0.35 : 0.42);
       st.step += dt * sp;
       if (st.step > 3.2) { st.step = 0; this.stomp(); }
@@ -487,9 +502,7 @@ export class Game {
     this.cyState.mode = 'script';
     const vp = victim.root.position;
     const stand = vp.clone().add(flat(cp).sub(flat(vp)).normalize().multiplyScalar(4.5));
-    this.cyState.noClip = true;
     await this.cyWalkTo(stand, 2.3);
-    this.cyState.noClip = false;
     if (this.cyState.stun > 0) { this.cyState.mode = 'tend'; return; }
     this.cyState.heading = Math.atan2(victim.root.position.x - cp.x, victim.root.position.z - cp.z);
     victim.state = 'frozen';
@@ -624,7 +637,7 @@ export class Game {
           const home = st.home || V(-3, 0, 1);
           const a = Math.random() * 6.28, r = 3 + Math.random() * 7;
           const x = home.x + Math.cos(a) * r, z = home.z + Math.sin(a) * r;
-          if (walkable(x, z, 2)) { st.walkTarget = V(x, 0, z); st.walkSpeed = st.mode === 'blind' ? 1.6 : 1.5; }
+          if (this.nav.giant.clear(x, z)) { st.walkTarget = V(x, 0, z); st.walkSpeed = st.mode === 'blind' ? 1.6 : 1.5; }
         }
         if (st.mode === 'blind' && Math.random() < dt * 0.15) this.audio.roar(cy.eyeWorld(), { dur: 2, vol: 0.6, pitch: 0.9, pain: true });
       }
@@ -824,18 +837,20 @@ export class Game {
       if (target) {
         const d = flat(target).sub(flat(r.position)); const dist = d.length();
         if (dist > 0.3) {
-          d.normalize();
-          const nx = r.position.x + d.x * speed * dt, nz = r.position.z + d.z * speed * dt;
+          // walk the grid path (slides along walls, never into the rock)
+          const wp = navSeek(this.nav.man, s, r.position, target, dt, 0.4);
+          d.set(wp[0] - r.position.x, 0, wp[1] - r.position.z);
+          const wl = d.length();
+          if (wl > 1e-4) d.divideScalar(wl);
+          const stepLen = Math.min(speed * dt, wl);
           const ox = r.position.x, oz = r.position.z;
-          const ok = (x, z) => s.state === 'crawlOut' || walkable(x, z, 0.15) || !walkable(ox, oz, 0.15);
-          if (ok(nx, nz)) { r.position.x = nx; r.position.z = nz; }
-          else if (ok(nx, oz)) r.position.x = nx;         // slide along the wall
-          else if (ok(ox, nz)) r.position.z = nz;
-          r.position.y = floorHeightAt(r.position.x, r.position.z);
+          if (s.state === 'crawlOut' && r.position.z > this.world.doorClosed.z) { r.position.x += d.x * stepLen; r.position.z += d.z * stepLen; } // out in the slot, beyond sight
+          else this.nav.man.step(r.position, d.x * stepLen, d.z * stepLen);
+          r.position.y = this.nav.man.floorY(r.position.x, r.position.z) ?? floorHeightAt(r.position.x, r.position.z);
           // stuck detection: if he barely moved for a while, give up on this target
           const moved = Math.hypot(r.position.x - ox, r.position.z - oz);
           s.stuckT = moved < speed * dt * 0.3 ? (s.stuckT || 0) + dt : 0;
-          if (s.stuckT > 0.6) { s.stuckT = 0; s.goal = null; s.home = r.position.clone(); anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle'; }
+          if (s.stuckT > 0.6) { s.stuckT = 0; s.goal = null; s.path = null; s.home = r.position.clone(); anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle'; }
           const h = Math.atan2(d.x, d.z); let dh = h - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); r.rotation.y += dh * Math.min(1, dt * 6);
         }
       }
@@ -1034,8 +1049,9 @@ export class Game {
       this.cyThink(dt);
       this.cy.update(dt);
     }
+    this.doorShut = this.world.boulder.position.distanceTo(this.world.doorClosed) < 2;
     this.updateSoldiers(dt, t);
-    this.flock.update(dt, t, { player: this.player, cyclops: this.cy, blocked: (x, z) => !walkable(x, z, 0.5) && z < 12 });
+    this.flock.update(dt, t, { player: this.player, cyclops: this.cy, nav: this.nav.man });
     this.particles.update(dt);
     this.interactions();
     this.gateCheck();

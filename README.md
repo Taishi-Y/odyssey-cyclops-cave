@@ -39,4 +39,5 @@ Checkpoints: `?phase=night|sleep|blind|gate`
 - Human models: generated with MakeHuman / MPFB (CC0 assets)
 - Cyclops loincloth: "Basic Loincloth 1" by Elvaerwyn (CC-BY)
 - Animations: X Bot (Mixamo) clips from the three.js examples, retargeted
-- Cave, sheep, fire and sound are generated in code
+- Cyclops voice: clip from YouTube cTEaP8VxN6o (film audio, personal use only)
+- Cave, sheep, fire and other sounds are generated in code
