@@ -9,7 +9,7 @@ import { Physics } from './physics.js';
 import { Fire } from './fire.js';
 import { loadNav, navSeek, tunnelCenterX } from './nav.js';
 import { updateCower } from './cower.js';
-import { setupCheeseCrew, cheeseStep, poseCheese, endCheese } from './cheese.js';
+import { setupCheeseCrew, startCheeseRun, cheeseStep, poseCheese, endCheese } from './cheese.js';
 import { Player } from './player.js';
 import { Input, isTouchDevice, attachTouchControls } from './input.js';
 import { HelpScreen } from './help.js';
@@ -145,6 +145,7 @@ export class Game {
     });
     equipSwords(this);
     setupCheeseCrew(this, clearSpot); // everyone starts raiding the cheese store
+    this.clearSpot = clearSpot;
     this.onProgress?.(0.85);
 
     // the flock (the film used 40 sheep; 10 keeps the cave readable and the frame light)
@@ -248,13 +249,14 @@ export class Game {
   async runIntro() {
     this.setPhase('intro');
     this.setDaylight(1);
+    startCheeseRun(this, this.clearSpot); // the men run from Odysseus's side to the cheese
     this.say('We followed the sheep and found this… There are bags of cheese hanging on the walls', 5, 'Polites');
     await this.wait(6);
     this.say('Food. Take as much as we can carry back to the ships', 4, 'Eurylochus');
-    // a good while to explore and watch the men gorge themselves before he comes home:
-    // at least 45 s, then he returns once the player has reached the cheese store (or 30 s more at the latest)
-    await this.wait(45);
-    await Promise.race([this.wait(30), this.until(() => Math.hypot(this.player.pos.x - 14, this.player.pos.z + 13) < 8)]);
+    // a short while to watch the men at the cheese before he comes home:
+    // at least 18 s, then he returns once the player has reached the cheese store (or 12 s more at the latest)
+    await this.wait(18);
+    await Promise.race([this.wait(12), this.until(() => Math.hypot(this.player.pos.x - 14, this.player.pos.z + 13) < 8)]);
     // the giant returns
     this.audio.stomp(V(0, 0, 45), 1.2); this.player.shake = 0.6;
     this.audio.boom?.('quake', 1);
@@ -1668,6 +1670,7 @@ export class Game {
           if (s.stuckT > 0.6) {
             s.stuckT = 0; s.goal = null; s.path = null;
             if (s.state === 'fight') { s.post = null; s.postT = 0; }
+            else if (s.chore && this.phase === 'intro') { /* still headed for his spot at the cheese: just re-path */ }
             else { s.home = r.position.clone(); anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle'; }
           }
           // face where he is really going (smoothed velocity), not the raw waypoint: sliding along a wall
