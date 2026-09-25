@@ -76,6 +76,24 @@ export class Audio {
     flt.connect(this.drone); this.out(this.drone, 0.7);
     this.dripT = 0;
   }
+  // the Metal Gear "!" sting: a bright stabbing chord
+  alertSting() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    for (const [f, d] of [[1318.5, 0], [1760, 0], [2637, 0.01], [880, 0]]) {
+      const o = ctx.createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(f, t + d); o.frequency.exponentialRampToValueAtTime(f * 0.985, t + 0.5);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(0.09, t + d + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      o.connect(g); this.out(g, 0.35); o.start(t + d); o.stop(t + 0.75);
+    }
+  }
+  huh() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime, o = ctx.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(640, t + 0.25);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.1, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    o.connect(g); this.out(g, 0.3); o.start(t); o.stop(t + 0.4);
+  }
+  knock(pos) { for (const d of [0, 0.18]) setTimeout(() => this.impact(pos, 'wood'), d * 1000); }
   setSlowMo(k) {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;

@@ -7,6 +7,7 @@ import { Player } from './player.js';
 import { Input, isTouchDevice, attachTouchControls } from './input.js';
 import { Audio } from './audio.js';
 import { Particles, Decals } from './fx.js';
+import { Radar, AlertSystem, WeaponWheel, CharacterSwitch } from './tactical.js';
 
 const $ = (id) => document.getElementById(id);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -85,6 +86,21 @@ export class Game {
     scene.add(this.stakeGlow);
     this.stakeHeat = 0;
 
+    // Metal Gear / GTA systems
+    this.VIEW_DOT = 0.2; this.VIEW_RANGE = 34;
+    this.noiseRings = [];
+    this.isAir = (x, z) => walkable(x, z, 0.3);
+    this.radar = new Radar(this);
+    this.alertSys = new AlertSystem(this);
+    this.wheel = new WeaponWheel(this);
+    this.switcher = new CharacterSwitch(this);
+    this.player.onKnock = () => this.knock();
+    this.player.onSwitch = () => this.switchCharacter();
+    const prevImpact = this.player.onImpact;
+    this.player.onImpact = (pt, n, p) => {
+      prevImpact(pt, n, p);
+      if (p && p.kind === 'stone') { this.makeNoise(pt, 1.3, true); this.audio.impact(pt, 'rock'); }
+    };
     this.phase = 'intro'; this.phaseT = 0; this.time = 0;
     this.tasks = [];
     this.eaten = 0;
@@ -380,10 +396,10 @@ export class Game {
     if (this.ended) return;
     this.ended = true;
     document.exitPointerLock?.();
-    const el = document.createElement('div'); el.className = 'end';
+    const el = document.createElement('div'); el.className = 'end ' + (win ? 'passed' : 'wasted');
     el.innerHTML = win
-      ? `<h1>ESCAPED</h1><p>Men who survived: ${survivors} / 12  (devoured: ${12 - survivors})</p><p style="font-size:14px;color:#8a7b66">With the giant\'s curse at his back, Odysseus ran for the ships.</p><button onclick="location.href=location.pathname">PLAY AGAIN</button>`
-      : `<h1>DEVOURED</h1><p>${reason}</p><button id="retry">FROM CHECKPOINT</button> <button onclick="location.href=location.pathname">FROM THE START</button>`;
+      ? `<div class="banner">MISSION PASSED</div><h1>ESCAPED</h1><p>Men who survived: ${survivors} / 12  (devoured: ${12 - survivors})</p><p style="font-size:14px;color:#8a7b66">With the giant\'s curse at his back, Odysseus ran for the ships.</p><button onclick="location.href=location.pathname">PLAY AGAIN</button>`
+      : `<div class="banner">WASTED</div><h1>DEVOURED</h1><p>${reason}</p><button id="retry">FROM CHECKPOINT</button> <button onclick="location.href=location.pathname">FROM THE START</button>`;
     document.body.appendChild(el);
     const r = el.querySelector('#retry');
     if (r) r.onclick = () => (location.href = `${location.pathname}?phase=${this.checkpointFor()}`);
@@ -514,8 +530,9 @@ export class Game {
     return l;
   }
 
-  makeNoise(p, loud) {
+  makeNoise(p, loud, ring = false) {
     const st = this.cyState;
+    if (ring) this.noiseRings.push({ p: p.clone(), t: 1 });
     if (!this.cy.root.visible) return;
     const d = p.distanceTo(this.cy.root.position);
     const heard = loud * 30 / (d + 5);
@@ -566,14 +583,17 @@ export class Game {
         const eye = cy.eyeWorld();
         const toP = P.pos.clone().add(V(0, 1, 0)).sub(eye); const dist = toP.length(); toP.normalize();
         const fwd = V(Math.sin(cy.root.rotation.y), 0, Math.cos(cy.root.rotation.y));
-        const inView = toP.dot(fwd) > 0.2 && dist < 34;
+        const inView = toP.dot(fwd) > this.VIEW_DOT && dist < this.VIEW_RANGE;
         const lit = this.lightAt(P.pos);
-        const vis = inView ? Math.max(0, lit - (P.crouch ? 0.9 : 0.35)) * (P.moving > 0.5 ? 1.4 : 0.7) : 0;
-        if (vis > 0 && !this.physics.raycastSegment(eye, P.pos.clone().add(V(0, 1.2, 0)))) { st.alert += vis * dt * 0.6; st.noiseAt = P.pos.clone(); }
+        // Metal Gear-like detection: distance, light, stance and movement all matter
+        const vis = inView ? Math.min(2, lit * 1.2 + 0.25) * (P.prone ? 0.22 : P.crouch ? 0.55 : 1) * (P.moving > 0.5 ? 1.3 : 0.8) * Math.max(0, 1 - dist / this.VIEW_RANGE) * 1.6 : 0;
+        if (vis > 0 && !this.physics.raycastSegment(eye, P.pos.clone().add(V(0, 1.2, 0)))) { st.alert += vis * dt; st.noiseAt = P.pos.clone(); }
         this.makeNoise(P.pos, P.noise * dt * 8);
       }
       if (st.mode === 'blind') this.makeNoise(P.pos, P.noise * dt * 10);
       st.alert = Math.max(0, st.alert - dt * 0.08);
+      if (st.alert > 1 && st.noiseAt && st.noiseAt.distanceTo(P.pos) < 3) this.alertSys.spotted();
+      else if (st.alert > 0.35) this.alertSys.suspicious();
       if (st.alert > 1 && st.noiseAt && !st.grabbing) {
         // hunt the source
         const target = st.noiseAt;
@@ -811,6 +831,45 @@ export class Game {
     if (P.pos.z > this.world.doorClosed.z + 4.5 && !this.escaping) { this.escaping = true; this.runEscape(); }
   }
 
+  // ------------------------------------------------------------------ Metal Gear: knock on the wall to lure the giant
+  knock() {
+    const P = this.player;
+    const dir = V(-Math.sin(P.yaw), 0, -Math.cos(P.yaw));
+    let wall = null;
+    for (const a of [0, 0.6, -0.6, 1.2, -1.2]) {
+      const d = dir.clone().applyAxisAngle(V(0, 1, 0), a);
+      for (let r = 0.4; r <= 1.6; r += 0.2) { const q = P.pos.clone().add(V(0, 1.2, 0)).addScaledVector(d, r); if (rockField(q.x, q.y, q.z) > 0) { wall = q; break; } }
+      if (wall) break;
+    }
+    if (!wall) { this.say('Nothing to knock on here', 1.2); return; }
+    this.audio.knock?.(wall);
+    this.makeNoise(wall, 1.1, true);
+  }
+
+  // ------------------------------------------------------------------ GTA V: switch to another crewman (sky-cam)
+  switchCharacter() {
+    const alive = this.soldiers.filter((s) => s.alive && s.root.visible && s.state !== 'grabbed');
+    if (!alive.length || this.switcher.busy) return;
+    this._swIdx = ((this._swIdx ?? -1) + 1) % alive.length;
+    // prefer the man furthest from the giant
+    alive.sort((a, b) => b.root.position.distanceTo(this.cy.root.position) - a.root.position.distanceTo(this.cy.root.position));
+    this.switcher.switchTo(alive[this._swIdx % alive.length]);
+  }
+
+  // where the GTA-style radar marker should point
+  objectivePoint() {
+    const W = this.world, P = this.player;
+    const log = W.interact.find((i) => i.id === 'log');
+    switch (this.phase) {
+      case 'intro': return V(3, 0, -12);
+      case 'sleep': return P.carrying ? W.firePos : log.obj.position;
+      case 'stakeHot': return this.cy.eyeWorld();
+      case 'blind': { if (P.disguised) return null; const s = W.interact.filter((i) => i.id === 'straw').sort((a, b) => a.pos.distanceTo(P.pos) - b.pos.distanceTo(P.pos))[0]; return s && s.pos; }
+      case 'gate': return W.doorClosed;
+      default: return null;
+    }
+  }
+
   // ------------------------------------------------------------------ bullet time (Breath of the Wild style)
   updateBulletTime(dtReal) {
     const P = this.player;
@@ -818,7 +877,8 @@ export class Game {
     const want = this.started && !P.dead && !P.locked && !P.carrying && P.weapon === 'bow' && P.airTime > 0.12 &&
       (P.aim > 0.5 || P.drawing) && P.stamina > 0 && !P.exhausted;
     P.bulletTime = want;
-    const target = want ? 0.2 : 1;
+    this.slowPunch = Math.max(0, (this.slowPunch || 0) - dtReal);
+    const target = this.slowPunch > 0 ? 0.08 : this.wheel?.open ? 0.15 : want ? 0.2 : 1;
     // ease into slow motion quickly, out of it a bit slower
     const k = Math.min(1, dtReal * (want ? 10 : 5));
     this.timeScale = THREE.MathUtils.lerp(this.timeScale ?? 1, target, k);
@@ -835,16 +895,16 @@ export class Game {
 
   updateStaminaWheel() {
     const P = this.player;
-    if (!this.wheel) {
-      this.wheel = document.createElement('div'); this.wheel.id = 'stamina';
-      this.wheel.innerHTML = '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="bg"/><circle cx="20" cy="20" r="16" class="fg"/></svg>';
-      document.getElementById('hud').appendChild(this.wheel);
-      this.wheelFg = this.wheel.querySelector('.fg');
+    if (!this.stamWheel) {
+      this.stamWheel = document.createElement('div'); this.stamWheel.id = 'stamina';
+      this.stamWheel.innerHTML = '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" class="bg"/><circle cx="20" cy="20" r="16" class="fg"/></svg>';
+      document.getElementById('hud').appendChild(this.stamWheel);
+      this.stamFg = this.stamWheel.querySelector('.fg');
     }
     const c = 2 * Math.PI * 16;
-    this.wheelFg.style.strokeDasharray = `${c * P.stamina} ${c}`;
-    this.wheel.classList.toggle('show', P.stamina < 0.999);
-    this.wheel.classList.toggle('exhausted', P.exhausted);
+    this.stamFg.style.strokeDasharray = `${c * P.stamina} ${c}`;
+    this.stamWheel.classList.toggle('show', P.stamina < 0.999);
+    this.stamWheel.classList.toggle('exhausted', P.exhausted);
   }
 
   hitMarker(critical) {
@@ -869,7 +929,13 @@ export class Game {
     this.tasks = this.tasks.filter((k) => !done.includes(k));
     done.forEach((k) => k.r());
 
+    this.wheel.update(this.input);
     this.player.update(dt, t, dtReal);
+    if (this.camOverride) { this.camera.position.copy(this.camOverride); this.camera.lookAt(this.camTarget); }
+    this.radar.update(dtReal);
+    this.alertSys.update(dtReal);
+    for (const n of this.noiseRings) n.t -= dtReal * 0.8;
+    this.noiseRings = this.noiseRings.filter((n) => n.t > 0);
     // safety net: never fall through the cave floor
     { // if the player ever ends up inside solid rock or below the world, put him back where he last stood
       const P = this.player;
@@ -894,8 +960,8 @@ export class Game {
     const fl = this.post.grade.uniforms.get('uFlash'); fl.value = Math.max(0, fl.value - dt * 0.6);
     // HUD
     const P = this.player;
-    this.hud.weapon.innerHTML = P.carrying ? '<b>STAKE</b>' : P.weapon === 'bow' ? `<b>BOW</b>  arrows ${P.arrows}` : `<b>SPEAR</b>  ${P.spears}`;
-    this.hud.status.innerHTML = `Men ${this.soldiers.filter((s) => s.alive).length} / 12${P.disguised ? '<br>Wearing straw' : ''}${P.crouch ? '<br>Crouching' : ''}`;
+    this.hud.weapon.innerHTML = P.carrying ? '<b>STAKE</b>' : P.weapon === 'bow' ? `<b>BOW</b>  arrows ${P.arrows}` : P.weapon === 'stone' ? `<b>STONE</b>  ${P.stones}` : `<b>SPEAR</b>  ${P.spears}`;
+    this.hud.status.innerHTML = `Men ${this.soldiers.filter((s) => s.alive).length} / 12${P.disguised ? '<br>Wearing straw' : ''}${P.prone ? '<br>Prone' : P.crouch ? '<br>Crouching' : ''}`;
     this.hud.cross.classList.toggle('aim', P.aim > 0.5 || P.drawing);
     this.hud.cross.style.setProperty('--draw', P.draw.toFixed(3));
     this.updateStaminaWheel();

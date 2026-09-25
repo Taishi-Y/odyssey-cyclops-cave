@@ -66,7 +66,7 @@ export class Player {
     this.eye = 1.65; this.crouch = false; this.onGround = false;
     this.hp = 100; this.dead = false;
     this.weapon = 'bow';
-    this.arrows = 14; this.spears = 3;
+    this.arrows = 14; this.spears = 3; this.stones = 6; this.prone = false;
     this.draw = 0; this.drawing = false; this.aim = 0;
     this.noise = 0; // how loud the player is right now (0..1)
     this.disguised = false; this.carrying = null; this.locked = false;
@@ -115,7 +115,7 @@ export class Player {
     this.nocked.visible = this.arrows > 0;
   }
 
-  get eyeHeight() { return this.crouch ? (this.disguised ? 0.75 : 1.0) : 1.65; }
+  get eyeHeight() { return this.prone ? 0.45 : this.crouch ? (this.disguised ? 0.75 : 1.0) : 1.65; }
 
   update(dt, t, dtReal = dt) {
     const I = this.input;
@@ -129,12 +129,17 @@ export class Player {
     // weapon switch
     if (I.pressed('Digit1')) { this.weapon = 'bow'; this.updateWeaponView(); }
     if (I.pressed('Digit2')) { this.weapon = 'spear'; this.updateWeaponView(); }
+    if (I.pressed('Digit3')) { this.weapon = 'stone'; this.updateWeaponView(); }
     if (I.pressed('KeyV') && this.avatar) this.thirdPerson = !this.thirdPerson;
     // move
-    this.crouch = I.down('ControlLeft') || I.down('KeyC') || I.down('MetaLeft');
+    if (I.pressed('KeyZ')) this.prone = !this.prone;
+    if (this.carrying) this.prone = false;
+    this.crouch = this.prone || I.down('ControlLeft') || I.down('KeyC') || I.down('MetaLeft');
+    if (I.pressed('KeyF')) this.onKnock?.();
+    if (I.pressed('KeyX')) this.onSwitch?.();
     const run = I.down('ShiftLeft') && !this.crouch && !this.carrying && !this.exhausted && this.stamina > 0;
     this.sprinting = run;
-    let speed = this.crouch ? 1.5 : run ? 6.2 : 3.3;
+    let speed = this.prone ? 0.9 : this.crouch ? 1.5 : run ? 6.2 : 3.3;
     if (this.carrying) speed *= 0.55;
     const f = (I.down('KeyW') ? 1 : 0) - (I.down('KeyS') ? 1 : 0);
     const s = (I.down('KeyD') ? 1 : 0) - (I.down('KeyA') ? 1 : 0);
@@ -155,7 +160,7 @@ export class Player {
     for (let i = 0; i < steps; i++) {
       const prev = this.pos.clone();
       this.pos.addScaledVector(this.vel, dt / steps);
-      const h = this.crouch ? 1.1 : this.height;
+      const h = this.prone ? 0.7 : this.crouch ? 1.1 : this.height;
       const r = this.physics.collideCapsule(this.pos, this.radius, h, this.vel);
       grounded = grounded || r.onGround;
       // never let the head or body poke into the rock (the cave mesh is one-sided)
@@ -206,6 +211,9 @@ export class Player {
         if (this.draw > 0.2) this.fireArrow(this.draw);
         this.draw = 0;
       }
+    } else if (this.weapon === 'stone') {
+      if (I.mouseDown[0] && this.stones > 0) { this.draw = Math.min(1, this.draw + dt / 0.4); this.drawing = true; }
+      else if (this.drawing) { this.drawing = false; this.throwStone(this.draw); this.draw = 0; }
     } else if (this.weapon === 'spear') {
       if (I.mouseDown[0] && this.spears > 0) { this.draw = Math.min(1, this.draw + dt / 0.5); this.drawing = true; }
       else if (this.drawing) { this.drawing = false; if (this.draw > 0.3) this.throwSpear(this.draw); this.draw = 0; }
@@ -252,6 +260,17 @@ export class Player {
     this.onFire?.();
   }
 
+  throwStone(power) {
+    this.stones--;
+    const { o, d } = this.aimRay();
+    const mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(0.06, 0), new THREE.MeshStandardMaterial({ color: 0x8a8070, roughness: 0.9 }));
+    mesh.castShadow = true; this.scene.add(mesh);
+    this.projectiles.push({ kind: 'stone', mesh, pos: o.clone().addScaledVector(d, 0.5), vel: d.clone().multiplyScalar(10 + power * 14).add(new THREE.Vector3(0, 2.5, 0)), life: 6, dmg: 0 });
+    this.audio.whoosh(0.2);
+    this.releaseT = 0.3;
+    this.onFire?.();
+  }
+
   updateProjectiles(dt) {
     const g = 9.8;
     for (const p of this.projectiles) {
@@ -285,7 +304,7 @@ export class Player {
       if (p.taken) continue;
       if (p.pos.distanceTo(this.pos.clone().add(new THREE.Vector3(0, 0.8, 0))) < 2.2) {
         p.taken = true; this.scene.remove(p.mesh);
-        if (p.kind === 'arrow') this.arrows++; else this.spears++;
+        if (p.kind === 'arrow') this.arrows++; else if (p.kind === 'stone') this.stones++; else this.spears++;
         this.updateWeaponView();
         return p.kind;
       }
@@ -334,7 +353,7 @@ export class Player {
     const anim = this.dead ? 'idle' : this.crouch ? (hs > 0.2 ? 'walk' : 'sneak_pose') : hs > 4.5 ? 'run' : hs > 0.25 ? 'walk' : 'idle';
     av.play(anim, 0.25, anim === 'walk' ? Math.max(0.5, hs / (this.crouch ? 2.2 : 1.6)) : anim === 'run' ? hs / 6 : 1);
     av.mixer.update(dt);
-    const low = this.crouch ? (this.disguised ? 0.55 : 0.72) : 1;
+    const low = this.prone ? 0.32 : this.crouch ? (this.disguised ? 0.55 : 0.72) : 1;
     this._low = THREE.MathUtils.lerp(this._low ?? 1, low, Math.min(1, dt * 8));
     av.root.scale.set(1, this._low, 1);
     av.root.updateMatrixWorld(true);
@@ -462,7 +481,7 @@ export class Player {
       // over-the-shoulder camera with wall collision
       const qc = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.pitch + sy, this.yaw + sx, 0, 'YXZ'));
       const back = new THREE.Vector3(0, 0, 1).applyQuaternion(qc), right = new THREE.Vector3(1, 0, 0).applyQuaternion(qc);
-      const pivot = this.pos.clone().add(new THREE.Vector3(0, (this.crouch ? 1.05 : 1.62) + by * 0.5, 0));
+      const pivot = this.pos.clone().add(new THREE.Vector3(0, (this.prone ? 0.6 : this.crouch ? 1.05 : 1.62) + by * 0.5, 0));
       for (let k = 0; k < 8 && rockField(pivot.x, pivot.y, pivot.z) > -0.3; k++) pivot.y -= 0.12;
       const dist = THREE.MathUtils.lerp(3.1, 1.35, this.aim);
       const side = THREE.MathUtils.lerp(0.42, 0.6, this.aim);

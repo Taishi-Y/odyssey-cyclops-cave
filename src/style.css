@@ -70,3 +70,44 @@ body.touch #status { left: 16px; bottom: auto; top: 70px; font-size: 12px; }
 body.touch #menu .title { font-size: 44px; }
 body.touch #menu .keys { display: none; }
 body.touch #prompt { top: 62%; font-size: 14px; }
+
+/* ---------------- Metal Gear: Soliton radar / alert ---------------- */
+#radar { position: absolute; right: 26px; top: 22px; width: 170px; height: 170px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(120,255,200,0.35), 0 0 18px rgba(0,0,0,0.6); }
+#radar canvas { width: 100%; height: 100%; border-radius: 50%; }
+#radar .rlabel { position: absolute; bottom: -18px; width: 100%; text-align: center; font: 600 9px/1 -apple-system, sans-serif; letter-spacing: 0.4em; color: rgba(120,255,200,0.7); }
+#radar.jam { box-shadow: 0 0 0 2px rgba(255,80,60,0.6), 0 0 18px rgba(255,0,0,0.3); }
+#radar.jam .rlabel { color: #ff6a50; }
+#radar.jam .rlabel::after { content: ' · JAMMING'; }
+#alertmark { position: absolute; transform: translate(-50%, -100%); font: 900 64px/1 'Arial Black', Impact, sans-serif; opacity: 0; pointer-events: none; }
+#alertmark.bang { opacity: 1; color: #ff3b2f; text-shadow: 0 0 12px rgba(255,60,40,0.8), 3px 3px 0 #000; animation: bang 0.35s cubic-bezier(.2,2,.4,1); }
+#alertmark.huh { opacity: 1; color: #ffd24a; text-shadow: 3px 3px 0 #000; font-size: 48px; }
+@keyframes bang { 0% { transform: translate(-50%, -60%) scale(0.2); } 100% { transform: translate(-50%, -100%) scale(1); } }
+#phasebar { position: absolute; right: 26px; top: 214px; width: 170px; font: 700 13px/1.2 -apple-system, sans-serif; letter-spacing: 0.2em; text-align: center; display: none; }
+#phasebar b { display: block; font-size: 17px; }
+#phasebar span { font-variant-numeric: tabular-nums; font-size: 20px; }
+#phasebar.alert, #phasebar.evasion, #phasebar.caution { display: block; }
+#phasebar.alert { color: #ff4a3a; text-shadow: 0 0 8px #ff2000; }
+#phasebar.evasion { color: #ffa53a; }
+#phasebar.caution { color: #ffd24a; }
+/* ---------------- GTA: weapon wheel / switch / banners ---------------- */
+#wheel { position: absolute; left: 50%; top: 50%; width: 360px; height: 360px; margin: -180px; opacity: 0; transform: scale(0.85); transition: opacity 0.15s, transform 0.15s; pointer-events: none; }
+#wheel.open { opacity: 1; transform: scale(1); pointer-events: auto; }
+#wheel .ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0.25) 32%, rgba(0,0,0,0.65) 33%, rgba(0,0,0,0.65) 70%, transparent 71%); }
+#wheel .slot { position: absolute; left: 50%; top: 50%; width: 110px; margin: -30px -55px; text-align: center; transform: rotate(var(--a)) translate(118px) rotate(calc(-1 * var(--a))); color: #bbb; font: 700 15px -apple-system, sans-serif; letter-spacing: 0.1em; padding: 10px 0; border-radius: 10px; }
+#wheel .slot small { display: block; font-weight: 400; font-size: 11px; color: #999; }
+#wheel .slot.sel { color: #fff; background: rgba(255,255,255,0.14); box-shadow: 0 0 0 2px rgba(255,210,74,0.8); }
+#wheel .center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 800 16px -apple-system, sans-serif; color: #ffd24a; letter-spacing: 0.15em; }
+#switcher { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.2s; background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5)); }
+#switcher.on { opacity: 1; filter: saturate(0); }
+.end.passed .banner, .end.wasted .banner { font: 900 64px/1 'Arial Black', Impact, sans-serif; letter-spacing: 0.02em; margin-bottom: 14px; text-shadow: 3px 3px 0 #000; animation: bannerIn 0.6s ease-out; }
+.end.passed .banner { color: #f2c14e; }
+.end.wasted { background: rgba(20,0,0,0.55); backdrop-filter: grayscale(1) contrast(1.2); }
+.end.wasted .banner { color: #b3261e; }
+@keyframes bannerIn { 0% { opacity: 0; transform: scale(1.6); } 100% { opacity: 1; transform: scale(1); } }
+body.touch #radar { width: 110px; height: 110px; right: 170px; top: 10px; }
+body.touch #phasebar { right: 170px; top: 138px; width: 110px; font-size: 10px; }
+body.touch #wheel { width: 300px; height: 300px; margin: -150px; }
+#t-wheel { right: 40px; bottom: 226px; font-size: 10px; }
+#t-knock { right: 214px; bottom: 26px; font-size: 10px; }
+#t-prone { right: 214px; bottom: 108px; font-size: 10px; }
+#t-switch { right: 160px; top: 24px; }

@@ -13,6 +13,11 @@ Open http://127.0.0.1:5188/ (Chrome recommended). Add `?q=low` if it runs slowly
 - Right click: aim
 - 1 bow / 2 spear / E interact (log, harden the stake, blind the giant, tie on straw, pick up arrows)
 - Jump (Space) and aim the bow in mid-air: slow motion like Breath of the Wild. Drains the green stamina wheel (sprinting drains it too)
+- Tab (hold): GTA-style weapon wheel, time slows while it is open (bow / spear / stones)
+- Z: prone (Metal Gear style crawl, almost invisible in the dark)
+- F: knock on a nearby wall to lure the giant; stones (3) make noise where they land
+- X: GTA V-style switch to another crewman (sky-cam transition)
+- Soliton radar (top right) shows the giant's field of view; getting seen triggers "!" and the ALERT / EVASION / CAUTION phases
 - V: switch between third-person (default) and first-person camera
 
 ## Story
