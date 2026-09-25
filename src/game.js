@@ -254,9 +254,9 @@ export class Game {
     await this.wait(6);
     this.say('Food. Take as much as we can carry back to the ships', 4, 'Eurylochus');
     // a short while to watch the men at the cheese before he comes home:
-    // at least 18 s, then he returns once the player has reached the cheese store (or 12 s more at the latest)
-    await this.wait(18);
-    await Promise.race([this.wait(12), this.until(() => Math.hypot(this.player.pos.x - 14, this.player.pos.z + 13) < 8)]);
+    // at least 10 s, then he returns once the player has reached the cheese store (or 8 s more at the latest)
+    await this.wait(10);
+    await Promise.race([this.wait(8), this.until(() => Math.hypot(this.player.pos.x - 14, this.player.pos.z + 13) < 8)]);
     // the giant returns
     this.audio.stomp(V(0, 0, 45), 1.2); this.player.shake = 0.6;
     this.audio.boom?.('quake', 1);
