@@ -46,7 +46,7 @@ export class ArrowFX {
   // tip glow sprite attached to a flying arrow
   decorate(p) {
     if (p.kind !== 'arrow') return;
-    p.mesh.scale.setScalar(2.4);
+    p.mesh.scale.setScalar(1.8);
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffcf8a, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
     s.scale.setScalar(0.25); s.position.z = 0.4; p.mesh.add(s); p.glow = s;
   }

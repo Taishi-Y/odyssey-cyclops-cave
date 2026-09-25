@@ -46,5 +46,6 @@ Checkpoints: `?phase=night|sleep|blind|gate`
 - Player / crew locomotion (walk, jog, sprint, crouch, jump): Universal Animation Library by Quaternius (CC0, https://quaternius.itch.io/universal-animation-library), retargeted with hip bob (work/anim/ual_extract.py)
 - Cyclops voice: clip from YouTube cTEaP8VxN6o (film audio, personal use only)
 - Campfire logs: "Campfire Wood Survival Warm and Light" (https://sketchfab.com/3d-models/campfire-wood-survival-warm-and-light-efd0ac8c5cca46bfaae91b3851b9c75f) by digrafstudio (https://sketchfab.com/digrafstudio), CC-BY 4.0. Converted to metal/rough
+- Cheese sacks: "Sack_v2" (https://sketchfab.com/3d-models/sack-v2-74f60f70effb486faf645519b3dae1a9) by TheDrone (https://sketchfab.com/thedrone), CC-BY 4.0
 - Flames: our own Blender Mantaflow sim baked into a flipbook (work/firesim/sim.py, atlas.py)
 - Cave, sheep, fire and other sounds are generated in code

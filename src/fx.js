@@ -2,7 +2,10 @@ import * as THREE from 'three';
 
 // Blood / dust / spark particles (CPU simulated, GPU drawn as soft points)
 export class Particles {
-  constructor(scene, max = 3000, { ground = null, onLand = null } = {}) {
+  // worldSize: point sizes are true world-space diameters (for blood that must read at the giant's scale);
+  // otherwise the old fixed screen factor is kept for dust / sparks
+  constructor(scene, max = 3000, { ground = null, onLand = null, worldSize = null } = {}) {
+    this.worldSize = worldSize; // { camera, renderer }
     this.max = max; this.n = 0;
     this.ground = ground; this.onLand = onLand; // floor height fn, callback when a heavy drop hits the floor
     this.splat = new Uint8Array(max);
@@ -14,8 +17,9 @@ export class Particles {
     g.setAttribute('size', new THREE.BufferAttribute(this.size, 1));
     this.mat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false,
-      vertexShader: `attribute vec4 color; attribute float size; varying vec4 vC; void main(){ vC = color; vec4 mv = modelViewMatrix*vec4(position,1.0); gl_PointSize = size * 300.0 / -mv.z; gl_Position = projectionMatrix*mv; }`,
-      fragmentShader: `varying vec4 vC; void main(){ float d = length(gl_PointCoord-0.5); if(d>0.5) discard; float a = smoothstep(0.5,0.1,d)*vC.a; gl_FragColor = vec4(vC.rgb, a); }`,
+      uniforms: { uScale: { value: 300 }, uEdge: { value: worldSize ? 0.36 : 0.1 } },
+      vertexShader: `uniform float uScale; attribute vec4 color; attribute float size; varying vec4 vC; void main(){ vC = color; vec4 mv = modelViewMatrix*vec4(position,1.0); gl_PointSize = size * uScale / -mv.z; gl_Position = projectionMatrix*mv; }`,
+      fragmentShader: `uniform float uEdge; varying vec4 vC; void main(){ float d = length(gl_PointCoord-0.5); if(d>0.5) discard; float a = smoothstep(0.5,uEdge,d)*vC.a; gl_FragColor = vec4(vC.rgb, a); }`,
     });
     this.points = new THREE.Points(g, this.mat);
     this.points.frustumCulled = false; this.points.renderOrder = 4;
@@ -31,19 +35,19 @@ export class Particles {
   // a bite tearing through a body: a burst of heavy drops thrown along dir, fine spray, and a red mist
   gore(p, dir, count = 150, force = 5) {
     const d = dir ? dir.clone().normalize() : new THREE.Vector3(0, 1, 0);
-    const red = () => [0.42 + Math.random() * 0.2, 0.012, 0.008, 1];
+    const red = () => [0.16 + Math.random() * 0.12, 0.002, 0.0015, 1];
     for (let k = 0; k < count; k++) {
       const r = new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
       const heavy = Math.random() < 0.35;
       const v = d.clone().multiplyScalar(force * (0.5 + Math.random() * 0.9)).addScaledVector(r, force * (heavy ? 0.45 : 0.8));
       const q = p.clone().addScaledVector(r, 0.12);
       this.emit(q, v, heavy
-        ? { color: red(), life: 2.5 + Math.random(), size: 0.07 + Math.random() * 0.1, drag: 0.25, splat: Math.random() < 0.5 }
-        : { color: red(), life: 0.7 + Math.random() * 0.8, size: 0.025 + Math.random() * 0.05, drag: 0.8 });
+        ? { color: red(), life: 2.5 + Math.random(), size: 0.045 + Math.random() * 0.08, drag: 0.25, splat: Math.random() < 0.5 }
+        : { color: red(), life: 0.7 + Math.random() * 0.8, size: 0.02 + Math.random() * 0.035, drag: 0.8 });
     }
     for (let k = 0; k < count * 0.15; k++) { // mist hanging in the air
       const v = d.clone().multiplyScalar(force * 0.25 * Math.random()).add(new THREE.Vector3((Math.random() - 0.5), Math.random() * 0.4, (Math.random() - 0.5)).multiplyScalar(1.2));
-      this.emit(p.clone(), v, { color: [0.3, 0.01, 0.006, 0.35], life: 0.6 + Math.random() * 0.6, size: 0.35 + Math.random() * 0.4, drag: 2.5, grav: 0.8 });
+      this.emit(p.clone(), v, { color: [0.28, 0.008, 0.005, 0.16], life: 0.5 + Math.random() * 0.5, size: 0.18 + Math.random() * 0.2, drag: 2.5, grav: 0.8 });
     }
   }
   // arterial jet from an open wound; call every frame with a 0..1 pulse strength
@@ -84,6 +88,11 @@ export class Particles {
     }
   }
   update(dt) {
+    if (this.worldSize) {
+      const { camera, renderer } = this.worldSize;
+      this._buf = renderer.getDrawingBufferSize(this._buf || new THREE.Vector2());
+      this.mat.uniforms.uScale.value = this._buf.y / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+    }
     for (let i = 0; i < this.n; i++) {
       if (this.life[i] <= 0) { this.col[i * 4 + 3] = 0; continue; }
       this.life[i] -= dt;

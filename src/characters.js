@@ -153,6 +153,9 @@ export class Cyclops {
     const byName = (n) => { let f = null; this.model.traverse((o) => { if (o.isBone && o.name.replace(/^mixamorig:?/, '') === n) f = o; }); return f; };
     this.rFingers = ['Index', 'Middle', 'Ring', 'Pinky'].map((f) => [1, 2, 3].map((i) => byName(`RightHand${f}${i}`)).filter(Boolean));
     this.rThumb = [1, 2, 3].map((i) => byName(`RightHandThumb${i}`)).filter(Boolean);
+    this.lFingers = ['Index', 'Middle', 'Ring', 'Pinky'].map((f) => [1, 2, 3].map((i) => byName(`LeftHand${f}${i}`)).filter(Boolean));
+    this.lThumb = [1, 2, 3].map((i) => byName(`LeftHandThumb${i}`)).filter(Boolean);
+    this.gripL = 0;
     this.grip = 0; this.bite = 0; this.chew = 0;
     // warm under-light, as if the fire were bouncing up onto his face (the film's close-ups)
     this.faceLight = new THREE.SpotLight(0xff8a44, 420, height * 0.6, 0.38, 0.7, 2);
@@ -164,7 +167,7 @@ export class Cyclops {
     this.root.updateMatrixWorld(true);
     const k = height / 1.95;
     // the single vertical eye (placed in model space at rest, then bound to the head bone)
-    const E = { x: 0.0212, y: 1.855, z: 0.1280, w: 0.045, h: 0.045, r: 0.0245 };   // large tilted almond eye, measured in Blender (work/socket_info.json)
+    const E = { x: 0.0212, y: 1.855, z: 0.1182, w: 0.063, h: 0.063, r: 0.0343 };   // large tilted almond eye, measured in Blender (work/socket_info.json)
     this.eyeGroup = new THREE.Group();
     this.eyeGroup.position.set(E.x * k, E.y * k, E.z * k);
     this.eyeGroup.scale.setScalar(k);
@@ -181,11 +184,13 @@ export class Cyclops {
     // hit zones
     const zone = (name, bone, r, dmg, off) => ({ name, obj: bone, r: r * k, dmg, offset: off ? off.clone() : null, world: new THREE.Vector3() });
     this.zones = [
-      { name: 'eye', obj: this.eyeGroup, r: 0.03 * k, dmg: 100, world: new THREE.Vector3() },
-      zone('head', this.bones.Head, 0.11, 8),
+      { name: 'eye', obj: this.eyeGroup, r: 0.042 * k, dmg: 100, world: new THREE.Vector3() },
+      zone('head', this.bones.Head, 0.135, 8, new THREE.Vector3(0, 0.098, 0.04)), // the Head bone sits at the skull base: centre the sphere on the skull (mesh y 1.70-1.95)
       zone('body', this.bones.Spine1, 0.17, 3), zone('body', this.bones.Spine2, 0.16, 3), zone('body', this.bones.Hips, 0.16, 3),
       zone('arm', this.bones.RightForeArm, 0.06, 2), zone('arm', this.bones.LeftForeArm, 0.06, 2),
       zone('arm', this.bones.RightArm, 0.06, 2), zone('arm', this.bones.LeftArm, 0.06, 2),
+      // the fists: generous, since a man held in the right one is the thing you are shooting at
+      zone('hand', this.bones.RightHand, 0.12, 2), zone('hand', this.bones.LeftHand, 0.1, 2),
       zone('leg', this.bones.LeftLeg, 0.07, 2), zone('leg', this.bones.RightLeg, 0.07, 2), zone('leg', this.bones.LeftUpLeg, 0.08, 2), zone('leg', this.bones.RightUpLeg, 0.08, 2),
     ];
     this.current = null;
@@ -208,9 +213,13 @@ export class Cyclops {
   // first point where a ray meets his (skinned, posed) skin, or null
   surfaceHit(origin, dir, far) {
     if (!this._skinMeshes) { this._skinMeshes = []; this.model.traverse((o) => { if (o.isMesh && o !== this.eyeMesh) this._skinMeshes.push(o); }); this._rc = new THREE.Raycaster(); }
-    for (const m of this._skinMeshes) if (m.isSkinnedMesh) m.boundingSphere = null; // he moves: recompute in the current pose
-    this._rc.set(origin, dir); this._rc.far = far;
-    const hit = this._rc.intersectObjects(this._skinMeshes, false)[0];
+    // three's SkinnedMesh.raycast re-skins every vertex per triangle (~110 ms on him): skin the mesh once per
+    // pose into a flat world-space buffer and test triangles against that instead (a few ms, shared by all rays)
+    let hit = null;
+    for (const m of this._skinMeshes) {
+      const h = m.isSkinnedMesh ? this.skinRay(m, origin, dir, far) : (this._rc.set(origin, dir), this._rc.far = far, this._rc.intersectObject(m, false)[0]);
+      if (h && (!hit || h.distance < hit.distance)) hit = h;
+    }
     if (!hit) return null;
     // the bone that drives that bit of skin most, so whatever sticks there follows the right limb
     let bone = null;
@@ -224,9 +233,65 @@ export class Cyclops {
     const point = hit.point.clone(); point.bone = bone;
     return point;
   }
+  // the skinned mesh in its current pose, world space (cached until the next animation update)
+  skinnedPositions(m) {
+    const c = (this._skinCache ||= new Map()).get(m);
+    if (c && c.pose === this._pose) return c.pos;
+    const g = m.geometry, P = g.attributes.position, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight, n = P.count;
+    const out = c?.pos || new Float32Array(n * 3);
+    m.skeleton.update();
+    const bm = m.skeleton.boneMatrices;
+    // world = matrixWorld * bindMatrixInverse * sum(w * boneMatrix) * bindMatrix * v
+    const pre = m.bindMatrix.elements, post = new THREE.Matrix4().multiplyMatrices(m.matrixWorld, m.bindMatrixInverse).elements;
+    // attributes may be interleaved: read them through (array, stride, offset)
+    const view = (A) => A.isInterleavedBufferAttribute ? [A.data.array, A.data.stride, A.offset] : [A.array, A.itemSize, 0];
+    const [pa, ps, po] = view(P), [sia, sis, sio] = view(SI), [swa, sws, swo] = view(SW);
+    const norm = P.normalized || SW.normalized;
+    for (let i = 0; i < n; i++) {
+      const x = norm ? P.getX(i) : pa[i * ps + po], y = norm ? P.getY(i) : pa[i * ps + po + 1], z = norm ? P.getZ(i) : pa[i * ps + po + 2];
+      const bx = pre[0] * x + pre[4] * y + pre[8] * z + pre[12], by = pre[1] * x + pre[5] * y + pre[9] * z + pre[13], bz = pre[2] * x + pre[6] * y + pre[10] * z + pre[14];
+      let sx = 0, sy = 0, sz = 0;
+      for (let k = 0; k < 4; k++) {
+        const w = norm ? SW.getComponent(i, k) : swa[i * sws + swo + k]; if (!w) continue;
+        const o = sia[i * sis + sio + k] * 16;
+        sx += w * (bm[o] * bx + bm[o + 4] * by + bm[o + 8] * bz + bm[o + 12]);
+        sy += w * (bm[o + 1] * bx + bm[o + 5] * by + bm[o + 9] * bz + bm[o + 13]);
+        sz += w * (bm[o + 2] * bx + bm[o + 6] * by + bm[o + 10] * bz + bm[o + 14]);
+      }
+      out[i * 3] = post[0] * sx + post[4] * sy + post[8] * sz + post[12];
+      out[i * 3 + 1] = post[1] * sx + post[5] * sy + post[9] * sz + post[13];
+      out[i * 3 + 2] = post[2] * sx + post[6] * sy + post[10] * sz + post[14];
+    }
+    this._skinCache.set(m, { pose: this._pose, pos: out });
+    return out;
+  }
+  // nearest triangle of a skinned mesh along a ray (Moller-Trumbore on the cached pose), three-style hit or null
+  skinRay(m, o, d, far) {
+    const pos = this.skinnedPositions(m), idx = m.geometry.index?.array, nt = idx ? idx.length / 3 : pos.length / 9;
+    const ox = o.x, oy = o.y, oz = o.z, dx = d.x, dy = d.y, dz = d.z;
+    let best = far, bf = -1;
+    for (let f = 0; f < nt; f++) {
+      const a = (idx ? idx[f * 3] : f * 3) * 3, b = (idx ? idx[f * 3 + 1] : f * 3 + 1) * 3, c = (idx ? idx[f * 3 + 2] : f * 3 + 2) * 3;
+      const ax = pos[a], ay = pos[a + 1], az = pos[a + 2];
+      const e1x = pos[b] - ax, e1y = pos[b + 1] - ay, e1z = pos[b + 2] - az, e2x = pos[c] - ax, e2y = pos[c + 1] - ay, e2z = pos[c + 2] - az;
+      const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x;
+      const det = e1x * px + e1y * py + e1z * pz;
+      if (det > -1e-9 && det < 1e-9) continue;
+      const inv = 1 / det, tx = ox - ax, ty = oy - ay, tz = oz - az;
+      const u = (tx * px + ty * py + tz * pz) * inv; if (u < 0 || u > 1) continue;
+      const qx = ty * e1z - tz * e1y, qy = tz * e1x - tx * e1z, qz = tx * e1y - ty * e1x;
+      const v = (dx * qx + dy * qy + dz * qz) * inv; if (v < 0 || u + v > 1) continue;
+      const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
+      if (t > 0 && t < best) { best = t; bf = f; }
+    }
+    if (bf < 0) return null;
+    const face = idx ? { a: idx[bf * 3], b: idx[bf * 3 + 1], c: idx[bf * 3 + 2] } : { a: bf * 3, b: bf * 3 + 1, c: bf * 3 + 2 };
+    return { distance: best, point: o.clone().addScaledVector(d, best), object: m, face };
+  }
   updateZones() { for (const z of this.zones) { if (z.offset) z.obj.localToWorld(z.world.copy(z.offset)); else z.obj.getWorldPosition(z.world); } }
 
   update(dt) {
+    this._pose = (this._pose || 0) + 1; // invalidates the skinned-pose cache used for arrow hits
     this.mixer.update(dt);
     this.model.updateMatrixWorld(true);
     let want = Math.max(this.forceSquat || 0, (this.crouch || 0) * (this.crouchDepth || 1.3)); // crouch: ducking through the low entrance tunnel
@@ -235,6 +300,8 @@ export class Cyclops {
     if (this.squat > 0.01) { this.poser.squatBend(this.squat * 0.85, this.squat, this.squatSign || 1); this.model.position.y = -this.squat * this.height * 0.22; }
     else this.model.position.y = 0;
     this.model.updateMatrixWorld(true);
+    // lying asleep: chin lifted off the chest so the face (and the eye) stays turned out
+    if (this.headLift) { this.poser.frame(); rotWorld(this.bones.Neck, this.poser.right, -this.headLift * 0.45); rotWorld(this.bones.Head, this.poser.right, -this.headLift * 0.55); this.model.updateMatrixWorld(true); }
     if (this.lookAt) this.poser.look(this.lookAt, 0.8);
     // eating: neck/head lunge down toward the hand (bite) plus a small chewing bob
     if (this.bite || this.chew) {
@@ -289,6 +356,14 @@ export class Cyclops {
         this.poser.reach(side, tgt, this.crouch);
       }
     }
+    // IK holds can also set the hand's orientation (fingers along aim.fingers, palm onto aim.palm) and curl the fingers
+    for (const side of ['R', 'L']) { const ik = this.ik[side]; if (ik?.aim && ik.w > 0.01) this.aimHand(side, ik.aim.fingers, ik.aim.palm, ik.w); }
+    if (this.gripL > 0.01 && this.lFingers[0]?.length) {
+      const a = this.lFingers[0][0].getWorldPosition(new THREE.Vector3()), b = this.lFingers[3][0].getWorldPosition(new THREE.Vector3());
+      const axis = a.sub(b).normalize().multiplyScalar(-(this.gripSign || 1));
+      for (const ch of this.lFingers) ch.forEach((bn, i) => rotWorld(bn, axis, this.gripL * [0.9, 1.1, 0.8][i]));
+      for (const bn of this.lThumb) rotWorld(bn, axis, this.gripL * 0.4);
+    }
     if (this.grip > 0.01 && this.rFingers[0]?.length) {
       // curl the fingers around what the hand holds (axis runs across the knuckles)
       const a = this.rFingers[0][0].getWorldPosition(new THREE.Vector3()), b = this.rFingers[3][0].getWorldPosition(new THREE.Vector3());
@@ -304,6 +379,31 @@ export class Cyclops {
     this.lid.scale.x = this.E.r * 1.08 * Math.max(0.05, closed);
     this.root.updateMatrixWorld(true);
     this.updateZones();
+  }
+
+  // turn a hand (after IK placed the wrist) so the fingers point along `fingers` and the palm faces `palm` (world dirs)
+  aimHand(side, fingers, palm, w = 1) {
+    const hand = side === 'R' ? this.bones.RightHand : this.bones.LeftHand, F = side === 'R' ? this.rFingers : this.lFingers;
+    if (!hand || !F?.[1]?.[0] || !F[3]?.[0]) return;
+    const P = (o) => o.getWorldPosition(new THREE.Vector3());
+    let f = P(F[1][0]).sub(P(hand)).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(f, fingers.clone().normalize());
+    const ang = 2 * Math.acos(THREE.MathUtils.clamp(q.w, -1, 1));
+    if (ang > 1e-4) rotWorld(hand, new THREE.Vector3(q.x, q.y, q.z).normalize(), ang * w);
+    f = P(F[1][0]).sub(P(hand)).normalize();
+    const cur = f.clone().cross(P(F[3][0]).sub(P(F[0][0]))).normalize().multiplyScalar(side === 'R' ? 1 : -1);
+    const want = palm.clone().addScaledVector(f, -palm.dot(f));
+    if (want.lengthSq() < 1e-6) return;
+    want.normalize();
+    let a = Math.acos(THREE.MathUtils.clamp(cur.dot(want), -1, 1));
+    if (cur.clone().cross(want).dot(f) < 0) a = -a;
+    rotWorld(hand, f, a * w);
+  }
+  palmWorld(side, v = new THREE.Vector3()) {
+    const hand = side === 'R' ? this.bones.RightHand : this.bones.LeftHand, F = side === 'R' ? this.rFingers : this.lFingers;
+    const P = (o) => o.getWorldPosition(new THREE.Vector3());
+    const f = P(F[1][0]).sub(P(hand)).normalize();
+    return v.copy(f.cross(P(F[3][0]).sub(P(F[0][0]))).normalize().multiplyScalar(side === 'R' ? 1 : -1));
   }
 
   setBlind() {

@@ -135,24 +135,6 @@ function makeDust(count, box) {
   return pts;
 }
 
-// Hanging cheese sacks (seen in the film: bags of cheese hanging from the wall)
-function makeCheeseSack(r) {
-  const pts = [];
-  for (let i = 0; i <= 16; i++) {
-    const t = i / 16;
-    const rad = Math.sin(Math.PI * Math.pow(t, 0.8)) * (0.32 + 0.05 * Math.sin(t * 9)) + 0.02;
-    pts.push(new THREE.Vector2(rad * (1 + (r() - 0.5) * 0.1), -t * 0.9));
-  }
-  const g = new THREE.LatheGeometry(pts, 20);
-  const pos = g.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i);
-    pos.setX(i, pos.getX(i) * (1 + Math.sin(y * 13 + i) * 0.03));
-    pos.setZ(i, pos.getZ(i) * (1 + Math.cos(y * 11 + i) * 0.03));
-  }
-  g.computeVertexNormals();
-  return g;
-}
 
 // Straw pile — used as the sheep disguise
 export function makeStraw(count, radius, height, seed = 3) {
@@ -426,19 +408,24 @@ export async function buildWorld(scene, renderer, onProgress) {
   }
 
   // cheese sacks on the wall, cheese wheels on a stone ledge, buckets
-  const sackMat = new THREE.MeshStandardMaterial({ color: 0x8f7a5a, roughness: 0.95 });
   const ropeMat = new THREE.MeshStandardMaterial({ color: 0x3d2f20, roughness: 1 });
   const sackSpots = [];
   for (let i = 0; i < 16; i++) {
     const a = -0.4 + i * 0.1;
     sackSpots.push([Math.sin(a) * 18.5 + 2, 3.2 + r() * 2.5, -Math.cos(a) * 12.5 - 2]);
   }
+  // tied burlap sack ("Sack_v2" by TheDrone, CC-BY), normalised so the knot sits at the origin and it hangs 0.9 tall
+  const sackSrc = await new Promise((res, rej) => gltf.load('assets/models/cheese_sack/sack_v2.glb', (g) => res(g.scene), undefined, rej));
+  prepModel(sackSrc);
+  sackSrc.traverse((o) => { if (o.isMesh) o.material.color.multiplyScalar(0.8); });
+  fitHeight(sackSrc, 0.9);
+  const sb = new THREE.Box3().setFromObject(sackSrc);
+  sackSrc.position.set(-(sb.min.x + sb.max.x) / 2, -sb.max.y, -(sb.min.z + sb.max.z) / 2);
   for (const [x, y, z] of sackSpots) {
-    const s = new THREE.Mesh(makeCheeseSack(r), sackMat);
+    const s = new THREE.Group().add(sackSrc.clone());
     s.position.set(x, y, z);
     s.scale.setScalar(0.8 + r() * 0.6);
-    s.rotation.z = (r() - 0.5) * 0.15;
-    s.castShadow = true; s.receiveShadow = true;
+    s.rotation.set((r() - 0.5) * 0.1, r() * 6.28, (r() - 0.5) * 0.15);
     const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2), ropeMat);
     rope.position.set(x, y + 0.6, z);
     scene.add(s, rope);

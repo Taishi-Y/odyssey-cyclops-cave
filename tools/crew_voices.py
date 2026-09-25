@@ -84,7 +84,7 @@ LINES = {
     "Hit the eye! Get away while you can": ("odysseus", LINE + " A captain roaring an order.", "Hit the EYE!! <gasp> Get away while you CAN!!"),
     "Heavy… but sharpened and hardened in the fire…": ("odysseus", LINE + " Straining under a heavy log.", "<breath> HEAVY!! But sharpened and HARDENED in the FIRE!!"),
     "The tip is glowing red. Now": ("odysseus", LINE + " A captain roaring an order.", "The tip is glowing RED!! <breath> NOW!!"),
-    "Straw tied on. Crouched, I should pass for a sheep… I hope": ("odysseus", LINE + " Frantic.", "Straw tied ON!! <breath> Crouched, I should pass for a SHEEP!! I HOPE!!"),
+    "Straw tied on. Crouched, I should pass for a sheep… I hope": ("odysseus", LINE + " Hysterical, the giant is right behind him, SCREAMING at himself in blind panic to keep going.", "STRAW TIED ON!! <gasp> CROUCHED!! I should pass for a SHEEP!! <gasp> GODS, I HOPE!!"),
     "Wait for the moment…": ("odysseus", LINE + " Straining with tension.", "WAIT!! <breath> Wait for the MOMENT!!"),
 }
 
@@ -102,7 +102,8 @@ def tts(text, style, voice):
     raise RuntimeError(err)
 
 
-MIN_SCORE, TRIES = 9, 5
+import os
+MIN_SCORE, TRIES = 9, int(os.environ.get("VOICE_TRIES", 5))
 SCORES = RAW / "scores.json"
 _scores = json.loads(SCORES.read_text()) if SCORES.exists() else {}
 import threading; _lock = threading.Lock()

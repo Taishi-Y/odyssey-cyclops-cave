@@ -185,7 +185,6 @@ export class Fire {
       sm.frustumCulled = false; sm.renderOrder = 2;
       this.group.add(sm);
     }
-    this.embers = new Embers(this.group, size, Math.round(count * 1.5));
     this.baseIntensity = intensity;
     if (light) {
       this.light = new THREE.PointLight(0xff8a3a, 0, 40 * size, 2.0);
@@ -205,7 +204,6 @@ export class Fire {
   }
   update(dt, t) {
     this.uniforms.uTime.value += dt;
-    this.embers.update(dt);
     this.flip?.update(dt);
     if (this.light) {
       this.flick += (Math.random() - 0.5) * dt * 30;
@@ -216,40 +214,5 @@ export class Fire {
       this.light.position.x = Math.sin(t * 5.1) * 0.08;
       this.light.position.z = Math.cos(t * 4.3) * 0.08;
     }
-  }
-}
-
-class Embers {
-  constructor(parent, size, n) {
-    this.n = n; this.size = size;
-    this.pos = new Float32Array(n * 3); this.vel = new Float32Array(n * 3); this.life = new Float32Array(n);
-    for (let i = 0; i < n; i++) this.reset(i, Math.random());
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
-    g.setAttribute('life', new THREE.BufferAttribute(this.life, 1));
-    const m = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      vertexShader: `attribute float life; varying float vL; void main(){ vL = life; vec4 mv = modelViewMatrix*vec4(position,1.0); gl_PointSize = (1.0 + 1.5*life) * 30.0 / -mv.z; gl_Position = projectionMatrix*mv; }`,
-      fragmentShader: `varying float vL; void main(){ float d = length(gl_PointCoord-0.5); float a = smoothstep(0.5,0.0,d) * vL; gl_FragColor = vec4(vec3(1.0,0.45,0.1)*a*8.0, a); }`,
-    });
-    this.points = new THREE.Points(g, m);
-    this.points.frustumCulled = false;
-    parent.add(this.points);
-  }
-  reset(i, l = 1) {
-    const s = this.size;
-    this.pos[i * 3] = (Math.random() - 0.5) * 0.8 * s; this.pos[i * 3 + 1] = Math.random() * 0.5 * s; this.pos[i * 3 + 2] = (Math.random() - 0.5) * 0.8 * s;
-    this.vel[i * 3] = (Math.random() - 0.5) * 0.6; this.vel[i * 3 + 1] = 1 + Math.random() * 2.5 * s; this.vel[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
-    this.life[i] = l;
-  }
-  update(dt) {
-    for (let i = 0; i < this.n; i++) {
-      this.life[i] -= dt * 0.35;
-      if (this.life[i] <= 0) { this.reset(i); continue; }
-      this.vel[i * 3] += (Math.random() - 0.5) * dt * 4; this.vel[i * 3 + 2] += (Math.random() - 0.5) * dt * 4;
-      this.pos[i * 3] += this.vel[i * 3] * dt; this.pos[i * 3 + 1] += this.vel[i * 3 + 1] * dt; this.pos[i * 3 + 2] += this.vel[i * 3 + 2] * dt;
-    }
-    this.points.geometry.attributes.position.needsUpdate = true;
-    this.points.geometry.attributes.life.needsUpdate = true;
   }
 }

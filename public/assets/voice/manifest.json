@@ -4,134 +4,134 @@
    {
     "f": "arrive_00_crewD.mp3",
     "v": 3,
-    "t": "Hide! Anywhere! Just HIDE!"
+    "t": "HIDE!! Anywhere!! Just HIDE!!"
    },
    {
     "f": "arrive_01_crewC.mp3",
     "v": 2,
-    "t": "Get down! GET DOWN!"
+    "t": "Get DOWN!! GET DOWN!!"
    },
    {
     "f": "arrive_02_crewE.mp3",
     "v": 4,
-    "t": "Hide! Anywhere! Just HIDE!"
+    "t": "HIDE!! Anywhere!! Just HIDE!!"
    },
    {
     "f": "arrive_03_mid.mp3",
     "v": 7,
-    "t": "Something's coming... <breath> something HUGE!"
+    "t": "Something's COMING!! <gasp> Something HUGE!!"
    },
    {
     "f": "arrive_04_deep2.mp3",
     "v": 0,
-    "t": "What IS that?! <gasp> The ground... it's shaking!"
+    "t": "What IS that?!! <gasp> The ground, it's SHAKING!!"
    },
    {
     "f": "arrive_05_crewE.mp3",
     "v": 4,
-    "t": "What IS that?! <gasp> The ground... it's shaking!"
+    "t": "What IS that?!! <gasp> The ground, it's SHAKING!!"
    },
    {
     "f": "arrive_06_crewD.mp3",
     "v": 3,
-    "t": "Gods help us... <gasp> gods help us!"
+    "t": "Gods HELP us!! <gasp> GODS HELP US!!"
    },
    {
     "f": "arrive_07_wiry.mp3",
     "v": 8,
-    "t": "Gods help us... <gasp> gods help us!"
+    "t": "Gods HELP us!! <gasp> GODS HELP US!!"
    },
    {
     "f": "arrive_08_deep3.mp3",
     "v": 1,
-    "t": "Oh no... oh no no no..."
+    "t": "Oh no!! <gasp> NO NO NO!!"
    },
    {
     "f": "arrive_09_deep2.mp3",
     "v": 0,
-    "t": "Gods help us... <gasp> gods help us!"
+    "t": "Gods HELP us!! <gasp> GODS HELP US!!"
    },
    {
     "f": "arrive_10_deep3.mp3",
     "v": 1,
-    "t": "Get down! GET DOWN!"
+    "t": "Get DOWN!! GET DOWN!!"
    },
    {
     "f": "arrive_11_tenor.mp3",
     "v": 6,
-    "t": "Something's coming... <breath> something HUGE!"
+    "t": "Something's COMING!! <gasp> Something HUGE!!"
    },
    {
     "f": "arrive_12_crewC.mp3",
     "v": 2,
-    "t": "That's not an animal... <breath> that's NOT an animal!"
+    "t": "That's not an ANIMAL!! <gasp> That's NOT an ANIMAL!!"
    },
    {
     "f": "arrive_13_crewF.mp3",
     "v": 5,
-    "t": "Did you hear that?! <gasp> Did you HEAR that?!"
+    "t": "Did you HEAR that?!! <gasp> Did you HEAR that?!!"
    }
   ],
   "sealed": [
    {
     "f": "sealed_00_deep2.mp3",
     "v": 0,
-    "t": "No! NO! Let us OUT!!"
+    "t": "No!! NO!! Let us OUT!!"
    },
    {
     "f": "sealed_01_tenor.mp3",
     "v": 6,
-    "t": "We'll never get out... <gasp> we'll never get OUT!"
+    "t": "We'll never get OUT!! <gasp> NEVER!!"
    },
    {
     "f": "sealed_02_wiry.mp3",
     "v": 8,
-    "t": "We'll never get out... <gasp> we'll never get OUT!"
+    "t": "We'll never get OUT!! <gasp> NEVER!!"
    },
    {
     "f": "sealed_03_crewC.mp3",
     "v": 2,
-    "t": "It's a tomb! <gasp> This is our TOMB!"
+    "t": "It's a TOMB!! <gasp> This is our TOMB!!"
    },
    {
     "f": "sealed_04_deep2.mp3",
     "v": 0,
-    "t": "Push it! PUSH! <gasp> It won't move!!"
+    "t": "PUSH it!! PUSH!! <gasp> It won't MOVE!!"
    },
    {
     "f": "sealed_05_deep3.mp3",
     "v": 1,
-    "t": "Gods... <breath> he's shut us in with him..."
+    "t": "He's shut us IN!! <gasp> He's shut us in with HIM!!"
    },
    {
     "f": "sealed_06_deep3.mp3",
     "v": 1,
-    "t": "We'll never get out... <gasp> we'll never get OUT!"
+    "t": "We'll never get OUT!! <gasp> NEVER!!"
    },
    {
     "f": "sealed_07_crewC.mp3",
     "v": 2,
-    "t": "Gods... <breath> he's shut us in with him..."
+    "t": "He's shut us IN!! <gasp> He's shut us in with HIM!!"
    },
    {
     "f": "sealed_08_crewD.mp3",
     "v": 3,
-    "t": "Push it! PUSH! <gasp> It won't move!!"
+    "t": "PUSH it!! PUSH!! <gasp> It won't MOVE!!"
    },
    {
     "f": "sealed_09_crewE.mp3",
     "v": 4,
-    "t": "The door! <gasp> He's blocking the DOOR!"
+    "t": "The DOOR!! <gasp> He's blocking the DOOR!!"
    },
    {
     "f": "sealed_10_crewF.mp3",
     "v": 5,
-    "t": "Push it! PUSH! <gasp> It won't move!!"
+    "t": "PUSH it!! PUSH!! <gasp> It won't MOVE!!"
    },
    {
     "f": "sealed_11_mid.mp3",
     "v": 7,
-    "t": "Gods... <breath> he's shut us in with him..."
+    "t": "He's shut us IN!! <gasp> He's shut us in with HIM!!"
    }
   ],
   "grab": [
@@ -143,7 +143,7 @@
    {
     "f": "grab_01_crewE.mp3",
     "v": 4,
-    "t": "Mother!! <gasp> MOTHER!!"
+    "t": "MOTHER!! <gasp> MOTHER!!"
    },
    {
     "f": "grab_02_crewD.mp3",
@@ -158,12 +158,12 @@
    {
     "f": "grab_04_deep3.mp3",
     "v": 1,
-    "t": "Don't let him take me!! <gasp> DON'T LET HIM!!"
+    "t": "Don't let him TAKE me!! <gasp> DON'T LET HIM!!"
    },
    {
     "f": "grab_05_crewC.mp3",
     "v": 2,
-    "t": "I don't want to die!! <gasp> I DON'T WANT TO DIE!!"
+    "t": "I don't want to DIE!! <gasp> I DON'T WANT TO DIE!!"
    },
    {
     "f": "grab_06_crewD.mp3",
@@ -173,7 +173,7 @@
    {
     "f": "grab_07_deep2.mp3",
     "v": 0,
-    "t": "Mother!! <gasp> MOTHER!!"
+    "t": "MOTHER!! <gasp> MOTHER!!"
    },
    {
     "f": "grab_08_crewF.mp3",
@@ -193,7 +193,7 @@
    {
     "f": "grab_11_mid.mp3",
     "v": 7,
-    "t": "I don't want to die!! <gasp> I DON'T WANT TO DIE!!"
+    "t": "I don't want to DIE!! <gasp> I DON'T WANT TO DIE!!"
    },
    {
     "f": "grab_12_deep3.mp3",
@@ -203,19 +203,19 @@
    {
     "f": "grab_13_deep2.mp3",
     "v": 0,
-    "t": "AAAH!! <gasp> GET IT OFF ME!!"
+    "t": "HELP ME!! HELP!! <gasp> ODYSSEUS!!"
    }
   ],
   "witness": [
    {
-    "f": "witness_00_crewE.mp3",
-    "v": 4,
-    "t": "He's GOT him!! <gasp> He's got him!!"
+    "f": "witness_00_deep3.mp3",
+    "v": 1,
+    "t": "Grab his arm!! <gasp> PULL HIM DOWN!!"
    },
    {
-    "f": "witness_01_crewF.mp3",
-    "v": 5,
-    "t": "Let him GO!! <gasp> LET HIM GO, YOU MONSTER!!"
+    "f": "witness_01_tenor.mp3",
+    "v": 6,
+    "t": "Grab his arm!! <gasp> PULL HIM DOWN!!"
    },
    {
     "f": "witness_02_deep3.mp3",
@@ -223,68 +223,68 @@
     "t": "Do something!! DO SOMETHING!!"
    },
    {
-    "f": "witness_03_crewE.mp3",
-    "v": 4,
-    "t": "Do something!! DO SOMETHING!!"
+    "f": "witness_03_crewD.mp3",
+    "v": 3,
+    "t": "Kill it!! KILL IT!!"
    },
    {
-    "f": "witness_04_crewF.mp3",
-    "v": 5,
-    "t": "Kill it!! KILL IT!!"
+    "f": "witness_04_crewE.mp3",
+    "v": 4,
+    "t": "He's GOT him!! <gasp> He's GOT HIM!!"
    },
    {
     "f": "witness_05_crewD.mp3",
     "v": 3,
-    "t": "Don't look! <gasp> Don't LOOK!"
-   },
-   {
-    "f": "witness_06_crewD.mp3",
-    "v": 3,
     "t": "Do something!! DO SOMETHING!!"
    },
    {
-    "f": "witness_07_tenor.mp3",
+    "f": "witness_06_tenor.mp3",
     "v": 6,
+    "t": "He's GOT him!! <gasp> He's GOT HIM!!"
+   },
+   {
+    "f": "witness_07_mid.mp3",
+    "v": 7,
     "t": "Grab his arm!! <gasp> PULL HIM DOWN!!"
    },
    {
-    "f": "witness_08_mid.mp3",
-    "v": 7,
+    "f": "witness_08_deep2.mp3",
+    "v": 0,
     "t": "Gods, NO!! NOT HIM!!"
    },
    {
-    "f": "witness_09_deep2.mp3",
-    "v": 0,
-    "t": "Don't look! <gasp> Don't LOOK!"
+    "f": "witness_09_crewE.mp3",
+    "v": 4,
+    "t": "Don't LOOK!! <gasp> DON'T LOOK!!"
    },
    {
-    "f": "witness_10_tenor.mp3",
-    "v": 6,
-    "t": "Do something!! DO SOMETHING!!"
-   },
-   {
-    "f": "witness_11_deep2.mp3",
-    "v": 0,
-    "t": "Stab it! Stab its HAND!!"
-   },
-   {
-    "f": "witness_12_wiry.mp3",
+    "f": "witness_10_wiry.mp3",
     "v": 8,
     "t": "Do something!! DO SOMETHING!!"
    },
    {
-    "f": "witness_13_crewC.mp3",
+    "f": "witness_11_crewC.mp3",
     "v": 2,
-    "t": "Don't look! <gasp> Don't LOOK!"
+    "t": "Stab it!! STAB ITS HAND!!"
    },
    {
-    "f": "witness_14_crewC.mp3",
-    "v": 2,
+    "f": "witness_12_crewF.mp3",
+    "v": 5,
+    "t": "Do something!! DO SOMETHING!!"
+   },
+   {
+    "f": "witness_13_crewF.mp3",
+    "v": 5,
+    "t": "Don't LOOK!! <gasp> DON'T LOOK!!"
+   },
+   {
+    "f": "witness_14_deep2.mp3",
+    "v": 0,
     "t": "Kill it!! KILL IT!!"
    },
    {
-    "f": "witness_15_deep3.mp3",
-    "v": 1,
+    "f": "witness_15_crewC.mp3",
+    "v": 2,
     "t": "Let him GO!! <gasp> LET HIM GO, YOU MONSTER!!"
    }
   ],
@@ -292,69 +292,69 @@
    {
     "f": "eaten_00_crewD.mp3",
     "v": 3,
-    "t": "No... <breath> no... gods have mercy..."
+    "t": "NO!! <gasp> NO!! Gods have MERCY!!"
    },
    {
     "f": "eaten_01_deep3.mp3",
     "v": 1,
-    "t": "He was right there... <breath> he was RIGHT THERE..."
+    "t": "He was RIGHT THERE!! <gasp> RIGHT THERE!!"
    },
    {
     "f": "eaten_02_tenor.mp3",
     "v": 6,
-    "t": "No... <breath> no... gods have mercy..."
+    "t": "NO!! <gasp> NO!! Gods have MERCY!!"
    },
    {
     "f": "eaten_03_mid.mp3",
     "v": 7,
-    "t": "No... <breath> no... gods have mercy..."
+    "t": "NO!! <gasp> NO!! Gods have MERCY!!"
    },
    {
     "f": "eaten_04_crewC.mp3",
     "v": 2,
-    "t": "No... <breath> no... gods have mercy..."
+    "t": "NO!! <gasp> NO!! Gods have MERCY!!"
    },
    {
     "f": "eaten_05_deep2.mp3",
     "v": 0,
-    "t": "I heard his bones... <gasp> I heard his BONES..."
+    "t": "I heard his BONES!! <gasp> I HEARD HIS BONES!!"
    },
    {
     "f": "eaten_06_crewF.mp3",
     "v": 5,
-    "t": "He ate him... <gasp> he ATE him..."
+    "t": "He ATE him!! <gasp> He ATE HIM!!"
    },
    {
     "f": "eaten_07_crewE.mp3",
     "v": 4,
-    "t": "I heard his bones... <gasp> I heard his BONES..."
+    "t": "I heard his BONES!! <gasp> I HEARD HIS BONES!!"
    },
    {
     "f": "eaten_08_deep3.mp3",
     "v": 1,
-    "t": "Zeus, protect us... <gasp> please..."
+    "t": "ZEUS, PROTECT US!! <gasp> PLEASE!!"
    },
    {
     "f": "eaten_09_deep2.mp3",
     "v": 0,
-    "t": "Zeus, protect us... <gasp> please..."
+    "t": "ZEUS, PROTECT US!! <gasp> PLEASE!!"
    },
    {
     "f": "eaten_10_wiry.mp3",
     "v": 8,
-    "t": "He ate him... <gasp> he ATE him..."
+    "t": "He ATE him!! <gasp> He ATE HIM!!"
    },
    {
     "f": "eaten_11_crewC.mp3",
     "v": 2,
-    "t": "I heard his bones... <gasp> I heard his BONES..."
+    "t": "I heard his BONES!! <gasp> I HEARD HIS BONES!!"
    }
   ],
   "dropped": [
    {
     "f": "dropped_00_deep3.mp3",
     "v": 1,
-    "t": "He's alive!! <gasp> Grab him, GRAB HIM!!"
+    "t": "He's ALIVE!! <gasp> Grab him, GRAB HIM!!"
    },
    {
     "f": "dropped_01_tenor.mp3",
@@ -369,12 +369,12 @@
    {
     "f": "dropped_03_wiry.mp3",
     "v": 8,
-    "t": "He's alive!! <gasp> Grab him, GRAB HIM!!"
+    "t": "He's ALIVE!! <gasp> Grab him, GRAB HIM!!"
    },
    {
     "f": "dropped_04_crewC.mp3",
     "v": 2,
-    "t": "He dropped him!! <breath> RUN!! RUN!!"
+    "t": "He DROPPED him!! <gasp> RUN!! RUN!!"
    },
    {
     "f": "dropped_05_crewF.mp3",
@@ -384,7 +384,7 @@
    {
     "f": "dropped_06_deep2.mp3",
     "v": 0,
-    "t": "This way!! <gasp> THIS WAY!!"
+    "t": "This WAY!! <gasp> THIS WAY!!"
    },
    {
     "f": "dropped_07_deep2.mp3",
@@ -394,12 +394,12 @@
    {
     "f": "dropped_08_mid.mp3",
     "v": 7,
-    "t": "Move!! MOVE!! GO GO GO!!"
+    "t": "He's ALIVE!! <gasp> Grab him, GRAB HIM!!"
    },
    {
     "f": "dropped_09_crewD.mp3",
     "v": 3,
-    "t": "This way!! <gasp> THIS WAY!!"
+    "t": "This WAY!! <gasp> THIS WAY!!"
    }
   ],
   "spotted": [
@@ -411,7 +411,7 @@
    {
     "f": "spotted_01_tenor.mp3",
     "v": 6,
-    "t": "Not me!! <gasp> Not ME!!"
+    "t": "Not ME!! <gasp> NOT ME!!"
    },
    {
     "f": "spotted_02_crewE.mp3",
@@ -419,9 +419,9 @@
     "t": "LOOK OUT!! <gasp> BEHIND YOU!!"
    },
    {
-    "f": "spotted_03_crewE.mp3",
-    "v": 4,
-    "t": "Not me!! <gasp> Not ME!!"
+    "f": "spotted_03_crewD.mp3",
+    "v": 3,
+    "t": "Not ME!! <gasp> NOT ME!!"
    },
    {
     "f": "spotted_04_crewF.mp3",
@@ -441,141 +441,141 @@
    {
     "f": "spotted_07_crewC.mp3",
     "v": 2,
-    "t": "He's looking at us!! <gasp> He's LOOKING at us!!"
+    "t": "He's LOOKING at us!! <gasp> He's LOOKING AT US!!"
    },
    {
     "f": "spotted_08_wiry.mp3",
     "v": 8,
-    "t": "He's looking at us!! <gasp> He's LOOKING at us!!"
+    "t": "He's LOOKING at us!! <gasp> He's LOOKING AT US!!"
    },
    {
     "f": "spotted_09_deep3.mp3",
     "v": 1,
-    "t": "Not me!! <gasp> Not ME!!"
+    "t": "Not ME!! <gasp> NOT ME!!"
    },
    {
     "f": "spotted_10_deep3.mp3",
     "v": 1,
-    "t": "He's SEEN us!! <gasp> He's coming!!"
+    "t": "He's SEEN us!! <gasp> He's COMING!!"
    },
    {
     "f": "spotted_11_crewC.mp3",
     "v": 2,
-    "t": "He's coming!! AIM FOR THE EYE!!"
+    "t": "He's COMING!! AIM FOR THE EYE!!"
    },
    {
-    "f": "spotted_12_crewD.mp3",
-    "v": 3,
+    "f": "spotted_12_crewE.mp3",
+    "v": 4,
     "t": "Scatter!! SCATTER!!"
    },
    {
     "f": "spotted_13_deep2.mp3",
     "v": 0,
-    "t": "He's SEEN us!! <gasp> He's coming!!"
+    "t": "He's SEEN us!! <gasp> He's COMING!!"
    }
   ],
   "waking": [
    {
     "f": "waking_00_deep3.mp3",
     "v": 1,
-    "t": "He's moving... <gasp> he's MOVING!!"
+    "t": "He's MOVING!! <gasp> HE'S MOVING!!"
    },
    {
     "f": "waking_01_crewC.mp3",
     "v": 2,
-    "t": "His eye... <gasp> his eye is OPEN!"
+    "t": "His EYE!! <gasp> HIS EYE IS OPEN!!"
    },
    {
     "f": "waking_02_crewD.mp3",
     "v": 3,
-    "t": "No... no no no... <gasp> he's waking up!!"
+    "t": "NO NO NO!! <gasp> He's WAKING UP!!"
    },
    {
     "f": "waking_03_crewF.mp3",
     "v": 5,
-    "t": "He's moving... <gasp> he's MOVING!!"
+    "t": "He's MOVING!! <gasp> HE'S MOVING!!"
    },
    {
     "f": "waking_04_crewE.mp3",
     "v": 4,
-    "t": "He's moving... <gasp> he's MOVING!!"
+    "t": "His EYE!! <gasp> HIS EYE IS OPEN!!"
    },
    {
     "f": "waking_05_deep2.mp3",
     "v": 0,
-    "t": "His eye... <gasp> his eye is OPEN!"
+    "t": "He's MOVING!! <gasp> HE'S MOVING!!"
    },
    {
     "f": "waking_06_tenor.mp3",
     "v": 6,
-    "t": "Quiet!! <breath> He's WAKING!!"
+    "t": "His EYE!! <gasp> HIS EYE IS OPEN!!"
    },
    {
     "f": "waking_07_mid.mp3",
     "v": 7,
-    "t": "Quiet!! <breath> He's WAKING!!"
+    "t": "He's WAKING!! <gasp> HE'S WAKING!!"
    },
    {
     "f": "waking_08_deep2.mp3",
     "v": 0,
-    "t": "Shh! SHH! <gasp> Nobody breathe!"
+    "t": "His EYE!! <gasp> HIS EYE IS OPEN!!"
    },
    {
     "f": "waking_09_wiry.mp3",
     "v": 8,
-    "t": "Shh! SHH! <gasp> Nobody breathe!"
+    "t": "He's WAKING!! <gasp> HE'S WAKING!!"
    }
   ],
   "blind": [
    {
     "f": "blind_00_crewE.mp3",
     "v": 4,
-    "t": "His hands!! <gasp> WATCH HIS HANDS!!"
+    "t": "He's gone MAD!! <gasp> Get back!! GET BACK!!"
    },
    {
-    "f": "blind_01_wiry.mp3",
-    "v": 8,
-    "t": "We did it... <gasp> gods, we DID it!"
+    "f": "blind_01_crewC.mp3",
+    "v": 2,
+    "t": "He's gone MAD!! <gasp> Get back!! GET BACK!!"
    },
    {
     "f": "blind_02_deep2.mp3",
     "v": 0,
-    "t": "He's blind!! <gasp> Stay LOW!! Don't make a sound!!"
+    "t": "His HANDS!! <gasp> WATCH HIS HANDS!!"
    },
    {
-    "f": "blind_03_deep2.mp3",
-    "v": 0,
-    "t": "His hands!! <gasp> WATCH HIS HANDS!!"
-   },
-   {
-    "f": "blind_04_crewC.mp3",
-    "v": 2,
-    "t": "We did it... <gasp> gods, we DID it!"
-   },
-   {
-    "f": "blind_05_crewF.mp3",
-    "v": 5,
-    "t": "We did it... <gasp> gods, we DID it!"
-   },
-   {
-    "f": "blind_06_mid.mp3",
-    "v": 7,
-    "t": "He's gone mad!! <breath> Get back!! GET BACK!!"
-   },
-   {
-    "f": "blind_07_deep3.mp3",
-    "v": 1,
-    "t": "He's gone mad!! <breath> Get back!! GET BACK!!"
-   },
-   {
-    "f": "blind_08_tenor.mp3",
-    "v": 6,
-    "t": "He's feeling for us... <breath> don't move... DON'T MOVE..."
-   },
-   {
-    "f": "blind_09_crewD.mp3",
+    "f": "blind_03_crewD.mp3",
     "v": 3,
-    "t": "He's blind!! <gasp> Stay LOW!! Don't make a sound!!"
+    "t": "He's BLIND!! <gasp> Stay LOW!! STAY LOW!!"
+   },
+   {
+    "f": "blind_04_deep3.mp3",
+    "v": 1,
+    "t": "His HANDS!! <gasp> WATCH HIS HANDS!!"
+   },
+   {
+    "f": "blind_05_wiry.mp3",
+    "v": 8,
+    "t": "We DID it!! <gasp> Gods, we DID IT!!"
+   },
+   {
+    "f": "blind_06_deep2.mp3",
+    "v": 0,
+    "t": "He's gone MAD!! <gasp> Get back!! GET BACK!!"
+   },
+   {
+    "f": "blind_07_crewF.mp3",
+    "v": 5,
+    "t": "He's gone MAD!! <gasp> Get back!! GET BACK!!"
+   },
+   {
+    "f": "blind_08_mid.mp3",
+    "v": 7,
+    "t": "He's gone MAD!! <gasp> Get back!! GET BACK!!"
+   },
+   {
+    "f": "blind_09_tenor.mp3",
+    "v": 6,
+    "t": "He's feeling for us!! <gasp> DON'T MOVE!! DON'T MOVE!!"
    }
   ]
  },
