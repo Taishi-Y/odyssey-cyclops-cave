@@ -537,9 +537,12 @@ export class Player {
       const pivot = this.pos.clone().add(new THREE.Vector3(0, (this.prone ? 0.6 : this.crouch ? 1.05 : 1.62) + by * 0.5, 0));
       for (let k = 0; k < 8 && rockField(pivot.x, pivot.y, pivot.z) > -0.3; k++) pivot.y -= 0.12;
       const ak = Math.max(this.aim, this.focus * 0.75);   // drawing also pulls the camera in over the shoulder
-      const dist = THREE.MathUtils.lerp(3.1, 1.35, ak);
+      // the Cyclops close by: pull the boom back and up so he fits in frame (aiming still wins)
+      this._giant = THREE.MathUtils.lerp(this._giant || 0, this.giantNear || 0, Math.min(1, dt * 2));
+      const gk = this._giant * (1 - ak);
+      const dist = THREE.MathUtils.lerp(3.1, 1.35, ak) + gk * 3.4;
       const side = THREE.MathUtils.lerp(0.42, 0.6, ak);
-      const desired = pivot.clone().addScaledVector(right, side).addScaledVector(back, dist).add(new THREE.Vector3(0, 0.15, 0));
+      const desired = pivot.clone().addScaledVector(right, side).addScaledVector(back, dist).add(new THREE.Vector3(0, 0.15 + gk * 1.1, 0));
       // march from the character toward the desired camera spot and stop before any rock
       // (uses the exact density field the cave was meshed from, plus the boulder/props via BVH)
       let t1 = 1;
@@ -561,7 +564,7 @@ export class Player {
       this._sprintFov = THREE.MathUtils.lerp(this._sprintFov || 0, this.sprinting && (this.moving || 0) > 4 ? 7 : 0, Math.min(1, dt * 4));
       this.fovKick = Math.max(0, (this.fovKick || 0) - dt * 4);
       // tighten a little while the bow is drawn, punch out on release
-      this.camera.fov = THREE.MathUtils.lerp(62 + this._sprintFov, 48, this.aim) - this.focus * 12 + this.fovKick * 7;
+      this.camera.fov = THREE.MathUtils.lerp(62 + this._sprintFov + gk * 14, 48, this.aim) - this.focus * 12 + this.fovKick * 7;
       this.camera.updateProjectionMatrix();
     }
   }

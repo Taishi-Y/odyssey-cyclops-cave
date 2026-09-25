@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { assault, squadActive } from './crewfight.js';
+import { voiceKey } from './voices.js';
 
 // The crew as one squad. A leader (Eurylochus, then Perimedes, Polites... whoever still stands) watches the giant
 // and ROARS orders; the men obey together:
@@ -36,8 +37,11 @@ async function loadOrders(A) {
   }));
 }
 
-function playBuf(A, b, { pos = null, vol = 1, when = 0, wet = 0.2, rate = 1 } = {}) {
-  const ctx = A.ctx, t = ctx.currentTime + when;
+function playBuf(A, b, { pos = null, vol = 1, when = 0, wet = 0.2, rate = 1, voice = null } = {}) {
+  const ctx = A.ctx;
+  if (voice != null) when = Math.max(when, (A.voiceFreeAt?.(voice) || 0) - ctx.currentTime); // never over his own voice
+  const t = ctx.currentTime + when;
+  if (voice != null) A.claimVoice?.(voice, t, b.duration / rate);
   const { pan } = pos ? A.spatial(pos) : { pan: 0 };
   const s = ctx.createBufferSource(); s.buffer = b; s.playbackRate.value = rate;
   const g = ctx.createGain(); g.gain.value = vol; // no distance falloff: a shouted order carries across the whole cave
@@ -53,23 +57,30 @@ function shoutOrder(G, order, voice, pos) {
   const mine = all.filter((x) => x.v === voice && A.orderBufs[x.f]);
   const pool = mine.length ? mine : all.filter((x) => x.v !== 'odysseus' && A.orderBufs[x.f]);
   if (!pool.length) return 1.2;
-  const pick = pool[(Math.random() * pool.length) | 0];
-  return playBuf(A, A.orderBufs[pick.f], { pos, vol: LOUD, wet: 0.22 });
+  const fresh = pool.filter((x) => x.f !== A._lastOrder?.[order]);
+  const pick = (fresh.length ? fresh : pool)[(Math.random() * (fresh.length || pool.length)) | 0];
+  (A._lastOrder ||= {})[order] = pick.f;
+  return playBuf(A, A.orderBufs[pick.f], { pos, vol: LOUD, wet: 0.22, voice });
 }
 
-// a few men roar back ("YES!!", "TOGETHER!!") in their own voices
+// now and then one man roars back ("YES!!", "TOGETHER!!") in their own voices, each a different word, loosely timed
 function acknowledge(G, leader, delay) {
   const A = G.audio; if (!A.ctx || !A.orderBufs) return;
+  if (Math.random() < 0.6) return; // usually nobody answers
   const men = G.soldiers.filter((s) => s.alive && s !== leader && s.state === 'fight')
-    .sort(() => Math.random() - 0.5).slice(0, 3);
-  let t = delay;
+    .sort(() => Math.random() - 0.5).slice(0, 1);
+  const used = new Set(), leaderV = leader ? voiceKey(LEADER_VOICE[leader.name] || 'crewC') : 'odysseus';
+  let t = delay + R(0, 0.4);
   for (const s of men) {
-    const mine = A.orderManifest.ack.filter((x) => x.v === s.voice && A.orderBufs[x.f]);
-    const pool = mine.length ? mine : A.orderManifest.ack.filter((x) => A.orderBufs[x.f]);
+    if (voiceKey(s.voice) === leaderV) continue;
+    if ((A.voiceFreeAt?.(s.voice) || 0) > A.ctx.currentTime + t) continue;
+    const ok = (x) => A.orderBufs[x.f] && !used.has(x.t);
+    const mine = A.orderManifest.ack.filter((x) => x.v === s.voice && ok(x));
+    const pool = mine.length ? mine : A.orderManifest.ack.filter(ok);
     if (!pool.length) return;
-    const b = A.orderBufs[pool[(Math.random() * pool.length) | 0].f];
-    playBuf(A, b, { pos: s.root.position.clone().setY(s.root.position.y + 1.6), vol: 1.3, when: t, wet: 0.35 });
-    t += R(0.12, 0.4);
+    const x = pool[(Math.random() * pool.length) | 0]; used.add(x.t);
+    const d = playBuf(A, A.orderBufs[x.f], { pos: s.root.position.clone().setY(s.root.position.y + 1.6), vol: 1.3, when: t, wet: 0.35, voice: s.voice });
+    t += d + R(0.2, 0.9);
   }
 }
 
@@ -127,7 +138,7 @@ export function issueOrder(G, order, { byPlayer = false } = {}) {
   const dur = shoutOrder(G, order, voice, pos);
   acknowledge(G, leader, Math.min(dur, 2.2) + 0.1);
   G.say(SUB[order], Math.max(2.2, dur + 0.5), who);
-  G._barkCd && (G._barkCd.spotted = G.time + 3); // don't bury the order under panic barks
+  G._barkAny = Math.max(G._barkAny || 0, G.time + 6); // no panic barks right after an order
   if (leader) { leader.shoutT = Math.min(dur, 2.5); }
 }
 
@@ -191,7 +202,9 @@ export function squadStep(G, s, dt) {
   // stand at a post (re-picked every ~0.5 s as he moves); face him once there
   const hold = (make, run = true) => {
     s.postT = (s.postT || 0) - dt;
-    if (!s.post || s.postT < 0) { s.post = make(); s.postT = 0.5; }
+    // once settled, ignore small drifts of the post (he shuffles a step, the spot slides 1-2 m): re-posting on every
+    // re-pick made the men run a few steps, stop, run again every half second
+    if (!s.post || s.postT < 0) { const p = make(); if (!s.post || !s.atPost || flat(p).distanceTo(flat(s.post)) > 2.5) s.post = p; s.postT = 0.5; }
     const d = flat(r.position).distanceTo(s.post);
     s.atPost = d < (s.atPost ? 1.4 : 0.7);
     if (!s.atPost) return { target: s.post, speed: run || d > 5 ? 4.3 : 1.6, anim: run || d > 5 ? 'run' : 'walk' };

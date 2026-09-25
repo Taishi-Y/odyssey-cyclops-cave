@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { buildCave, LAYOUT, floorHeightAt } from './cave.js';
+import { buildCave, LAYOUT, floorHeightAt, rockField } from './cave.js';
 import { makeRockMaterial } from './materials.js';
 import { Fire } from './fire.js';
 import { rng, fbm3, noise3 } from './noise.js';
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const gltf = new GLTFLoader();
 const loadModel = (name) => new Promise((res, rej) => gltf.load(`assets/models/${name}/${name}.gltf`, (g) => res(g.scene), undefined, rej));
@@ -98,6 +98,25 @@ function makeDoorSlab() {
   merged.setAttribute('uv', new THREE.BufferAttribute(UV, 2));
   merged.setAttribute('uv1', merged.attributes.uv);
   return merged;
+}
+
+// Three-strand twisted rope laid along a curve (a plain cylinder reads as a stick)
+function makeRope(curve, radius = 0.018, twist = 55, seg = 0) {
+  const len = curve.getLength();
+  const n = seg || Math.max(24, Math.round(len * 90));
+  const fr = curve.computeFrenetFrames(n, curve.closed);
+  const strands = [];
+  for (let k = 0; k < 3; k++) {
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, p = curve.getPointAt(t);
+      const th = t * len * twist + k * 2.094;
+      const off = radius * 0.55;
+      pts.push(p.addScaledVector(fr.normals[i], Math.cos(th) * off).addScaledVector(fr.binormals[i], Math.sin(th) * off));
+    }
+    strands.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), n * 2, radius * 0.55, 6, false));
+  }
+  return mergeGeometries(strands);
 }
 
 // Dust motes that sparkle in the light
@@ -233,6 +252,16 @@ export async function buildWorld(scene, renderer, onProgress) {
   scene.add(crackLight, crackLight.target);
   W.crackLight = crackLight;
 
+  // the cheese store: daylight spills through a second fissure onto the back wall where the sacks hang (x 8..20, z -17)
+  const cheeseLight = new THREE.SpotLight(0xffe8c4, 900, 40, 0.5, 0.75, 1.0);
+  cheeseLight.position.set(13.5, 19, -9);
+  cheeseLight.target.position.set(14, 2, -15);
+  scene.add(cheeseLight, cheeseLight.target);
+  const cheeseFill = new THREE.PointLight(0xffd29a, 60, 14, 1.4); // warm bounce off the burlap so the sacks read
+  cheeseFill.position.set(14, 3.2, -12.5);
+  scene.add(cheeseFill);
+  W.cheeseLight = cheeseLight;
+
   // shadow maps are the most expensive part of a frame (the fire's cube map redraws the whole cave 6 times),
   // so refresh them in rotation instead of every frame: fire every 2nd frame, the two spots every 4th
   const shadowLights = [fire.light, sun, crackLight];
@@ -253,6 +282,8 @@ export async function buildWorld(scene, renderer, onProgress) {
 
   // shafts
   const shaftCrack = makeShaft(new THREE.Vector3(LAYOUT.crack.x + 1.8, 30, LAYOUT.crack.z), new THREE.Vector3(LAYOUT.crack.x - 0.6, 0, LAYOUT.crack.z + 0.4), 0.6, 3.2, 0x9fd8ff, 0.12);
+  const shaftCheese = makeShaft(new THREE.Vector3(13.5, 22, -10), new THREE.Vector3(14, 0, -14.5), 0.9, 4.2, 0xffe2b8, 0.09);
+  scene.add(shaftCheese); W.updaters.push((dt) => (shaftCheese.material.uniforms.uTime.value += dt));
   const shaftEntrance = makeShaft(new THREE.Vector3(3.5, 12, 40), new THREE.Vector3(-2, 0, 2), 3.5, 9, 0x9fd8ff, 0.07);
   scene.add(shaftCrack, shaftEntrance);
   W.shafts = [shaftCrack, shaftEntrance];
@@ -309,7 +340,8 @@ export async function buildWorld(scene, renderer, onProgress) {
   const doorZ = LAYOUT.boulderZ;
   const tunnelXAt = (z) => (z - LAYOUT.tunnelZ0) * 0.09;
   W.doorClosed = new THREE.Vector3(tunnelXAt(doorZ), -0.6, doorZ);
-  W.doorOpen = new THREE.Vector3(tunnelXAt(doorZ) + 9.5, -0.6, doorZ + 3.5);
+  W.doorOpen = new THREE.Vector3(tunnelXAt(doorZ) + 10.5, -0.6, doorZ + 1.2);
+  boulder.scale.setScalar(1.45); // sized to the widened entrance
   boulder.position.copy(W.doorOpen);
   boulder.rotation.y = 0.12;
   scene.add(boulder);
@@ -408,34 +440,103 @@ export async function buildWorld(scene, renderer, onProgress) {
   }
 
   // cheese sacks on the wall, cheese wheels on a stone ledge, buckets
-  const ropeMat = new THREE.MeshStandardMaterial({ color: 0x3d2f20, roughness: 1 });
   const sackSpots = [];
   for (let i = 0; i < 16; i++) {
     const a = -0.4 + i * 0.1;
-    sackSpots.push([Math.sin(a) * 18.5 + 2, 3.2 + r() * 2.5, -Math.cos(a) * 12.5 - 2]);
+    sackSpots.push([Math.sin(a) * 18.5 + 2, 1.2 + r() * 1.2, -Math.cos(a) * 12.5 - 2]); // hung low, within a man's reach
   }
   // tied burlap sack ("Sack_v2" by TheDrone, CC-BY), normalised so the knot sits at the origin and it hangs 0.9 tall
   const sackSrc = await new Promise((res, rej) => gltf.load('assets/models/cheese_sack/sack_v2.glb', (g) => res(g.scene), undefined, rej));
   prepModel(sackSrc);
   sackSrc.traverse((o) => { if (o.isMesh) o.material.color.multiplyScalar(0.8); });
   fitHeight(sackSrc, 0.9);
-  const sb = new THREE.Box3().setFromObject(sackSrc);
-  sackSrc.position.set(-(sb.min.x + sb.max.x) / 2, -sb.max.y, -(sb.min.z + sb.max.z) / 2);
-  for (const [x, y, z] of sackSpots) {
+  sackSrc.updateMatrixWorld(true);
+  // find the gathered neck just under the knot: centre + radius of a thin slice of vertices
+  const neck = (() => {
+    const b = new THREE.Box3().setFromObject(sackSrc, true), v = new THREE.Vector3(), hs = [];
+    sackSrc.traverse((o) => { if (!o.isMesh) return; const pa = o.geometry.attributes.position;
+      for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i).applyMatrix4(o.matrixWorld); hs.push(v.clone()); } });
+    const slice = (y0, y1) => hs.filter((q) => q.y > b.min.y + y0 * 0.9 && q.y < b.min.y + y1 * 0.9);
+    const top = slice(0.9, 1.0), c = new THREE.Vector3();
+    top.forEach((q) => c.add(q)); c.divideScalar(top.length);
+    const ring = slice(0.8, 0.86); let rad = 0;
+    ring.forEach((q) => (rad += Math.hypot(q.x - c.x, q.z - c.z))); rad /= ring.length;
+    return { c, top: b.max.y, y: b.min.y + 0.83 * 0.9, r: rad };
+  })();
+  sackSrc.position.set(-neck.c.x, -neck.top, -neck.c.z);
+  const neckY = neck.y - neck.top; // below the knot origin
+  const ropeMat = new THREE.MeshStandardMaterial({ color: 0x6b5638, roughness: 1 });
+  const pegMat = new THREE.MeshStandardMaterial({ color: 0x4a3522, roughness: 0.95 });
+  // the rock mesh is built from rockField (positive = rock), so pegs and clearance are measured against it
+  const grad = (x, y, z) => { const e = 0.05; return new THREE.Vector3(
+    rockField(x + e, y, z) - rockField(x - e, y, z), 0, rockField(x, y, z + e) - rockField(x, y, z - e)).normalize(); };
+  const up = new THREE.Vector3(0, 1, 0);
+  const hung = [];
+  W.cheeseSacks = []; // { knot, sc }: where the men reach for them in the intro
+  for (const [x0, y0, z0] of sackSpots) {
+    const sc = 0.8 + r() * 0.6;
+    // wooden peg hammered into the wall a little above the sack; the sack hangs off its tip
+    const py = y0 + 0.75 + r() * 0.35;
+    const wall = new THREE.Vector3(x0, py, z0);
+    const radial = new THREE.Vector3(x0 - 2, 0, z0 + 2).normalize(); // straight out from the chamber centre
+    for (let k = 0; k < 80 && rockField(wall.x, wall.y, wall.z) < 0; k++) wall.addScaledVector(radial, 0.1);
+    for (let k = 0; k < 80 && rockField(wall.x, wall.y, wall.z) > 0; k++) wall.addScaledVector(radial, -0.03);
+    const out = grad(wall.x, wall.y, wall.z).negate().lerp(radial.clone().negate(), 0.5).normalize(); // toward the air
+    const pegDir = out.clone().add(new THREE.Vector3(0, 0.3, 0)).normalize(); // tipped up so the rope can't slide off
+    // the sack hangs under the peg tip on a rope of random length; the peg is just long enough to keep it off the rock
+    const drop = 0.3 + r() * 0.35;
+    const clear = (tip) => {
+      for (let h = 0.15; h <= 0.85; h += 0.14) for (let k = 0; k < 8; k++) {
+        const a = k * 0.785, rr = (0.12 + 0.2 * Math.sin(Math.PI * Math.min(1, h / 0.8))) * sc;
+        if (rockField(tip.x + Math.cos(a) * rr, tip.y - drop - h * sc, tip.z + Math.sin(a) * rr) > -0.05) return false;
+      }
+      return true;
+    };
+    let pegLen = 0.22;
+    while (pegLen < 1.2 && !clear(wall.clone().addScaledVector(pegDir, pegLen - 0.05))) pegLen += 0.04;
+    const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.042, pegLen + 0.2, 7), pegMat);
+    peg.position.copy(wall).addScaledVector(pegDir, (pegLen - 0.2) / 2);
+    peg.quaternion.setFromUnitVectors(up, pegDir);
+    peg.castShadow = true; peg.receiveShadow = true;
+    const tip = wall.clone().addScaledVector(pegDir, pegLen - 0.05);
+    const knot = tip.clone().add(new THREE.Vector3(0, -drop, 0));
+    // never let a sack sit on (or in) the floor below it: move peg, rope and sack together
+    // and hang them all low, the bottom 0.5 to 1.1 m off the floor below (within a man's reach)
+    const lift = floorHeightAt(knot.x, knot.z) + 0.5 + r() * 0.6 - (knot.y - 0.9 * sc);
+    if (Math.abs(lift) > 0.01) { tip.y += lift; knot.y += lift; peg.position.y += lift; }
+    if (hung.some((q) => q.distanceTo(knot) < 0.75)) continue; // don't let two sacks crowd into one spot
+    hung.push(knot); W.cheeseSacks.push({ knot: knot.clone(), sc });
     const s = new THREE.Group().add(sackSrc.clone());
-    s.position.set(x, y, z);
-    s.scale.setScalar(0.8 + r() * 0.6);
-    s.rotation.set((r() - 0.5) * 0.1, r() * 6.28, (r() - 0.5) * 0.15);
-    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2), ropeMat);
-    rope.position.set(x, y + 0.6, z);
-    scene.add(s, rope);
+    s.position.copy(knot);
+    s.scale.setScalar(sc);
+    const yaw = r() * 6.28;
+    s.rotation.set((r() - 0.5) * 0.06, yaw, (r() - 0.5) * 0.06);
+    s.castShadow = true;
+    // rope: loop over the peg, two legs down to the neck, then a few turns round the neck
+    const side = new THREE.Vector3().crossVectors(pegDir, up).normalize();
+    const pr = 0.055, legs = [];
+    const loop = [];
+    for (let i = 0; i <= 12; i++) { const a = Math.PI * (i / 12); loop.push(tip.clone().addScaledVector(side, Math.cos(a) * pr).add(new THREE.Vector3(0, Math.sin(a) * pr, 0))); }
+    const nY = knot.y + neckY * sc, nR = neck.r * sc + 0.012;
+    const L = loop[0], R = loop[loop.length - 1];
+    const legCurve = (from, sgn) => new THREE.CatmullRomCurve3([
+      from, from.clone().lerp(new THREE.Vector3(knot.x, nY, knot.z), 0.5).addScaledVector(side, sgn * 0.01),
+      new THREE.Vector3(knot.x, nY + 0.02, knot.z).addScaledVector(side, sgn * nR)]);
+    legs.push(makeRope(new THREE.CatmullRomCurve3(loop)), makeRope(legCurve(L, 1)), makeRope(legCurve(R, -1)));
+    const wrap = [], turns = 2.5 + r();
+    for (let i = 0; i <= 60; i++) { const t = i / 60, a = t * turns * 6.283; wrap.push(new THREE.Vector3(knot.x + Math.cos(a) * nR, nY + 0.03 - t * 0.07, knot.z + Math.sin(a) * nR)); }
+    legs.push(makeRope(new THREE.CatmullRomCurve3(wrap), 0.016, 70));
+    const rope = new THREE.Mesh(mergeGeometries(legs), ropeMat);
+    rope.castShadow = true; rope.receiveShadow = true;
+    scene.add(s, rope, peg);
   }
   const cheeseMat = new THREE.MeshStandardMaterial({ color: 0xd8c690, roughness: 0.7 });
   W.cheeseWheels = [];
   for (let i = 0; i < 9; i++) {
     const w = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.48, 0.28, 24), cheeseMat);
     W.cheeseWheels.push(w);
-    w.position.set(15 + (i % 3) * 1.0 - 1, floorHeightAt(15, 2) + 0.14 + Math.floor(i / 3) * 0.29, 2 + (i % 3) * 0.3);
+    // stacked under the sacks, in the light (the men sit round them eating)
+    w.position.set(18.6 + (i % 3) * 1.0, floorHeightAt(19.6, -11.5) + 0.14 + Math.floor(i / 3) * 0.29, -11.5 - (i % 3) * 0.3);
     w.castShadow = true; w.receiveShadow = true;
     scene.add(w);
   }
@@ -461,7 +562,7 @@ export async function buildWorld(scene, renderer, onProgress) {
   const torchSpots = [[8, 0.5, 11], [-9, 0.5, 9]];
   for (const [x, , z] of torchSpots) {
     const y = floorHeightAt(x, z);
-    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.4), ropeMat);
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.4), pegMat);
     stick.position.set(x, y + 0.7, z); stick.rotation.z = 0.25;
     scene.add(stick);
     const f = new Fire(scene, new THREE.Vector3(x + 0.17, y + 1.4, z), { size: 0.35, count: 16, smoke: false, intensity: 1.2, cards: 2 });

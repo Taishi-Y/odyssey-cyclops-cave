@@ -9,6 +9,7 @@ import { Physics } from './physics.js';
 import { Fire } from './fire.js';
 import { loadNav, navSeek, tunnelCenterX } from './nav.js';
 import { updateCower } from './cower.js';
+import { setupCheeseCrew, cheeseStep, poseCheese, endCheese } from './cheese.js';
 import { Player } from './player.js';
 import { Input, isTouchDevice, attachTouchControls } from './input.js';
 import { HelpScreen } from './help.js';
@@ -115,14 +116,24 @@ export class Game {
 
     // companions (12 men followed Odysseus into the cave)
     this.soldiers = [];
-    const spots = [[5, 3], [7, 1], [9, 4], [11, 2], [13, 5], [12, 0], [8, 7], [4, 6], [15, 3], [10, 9], [6, 9], [14, 8]];
-    spots.forEach(([x, z], i) => {
+    // they start crowded under the cheese sacks on the back wall (x 9..18, z -17), next to the flock (~(12,-7))
+    const spots = [[8, -13], [8.5, -15], [9, -11.5], [14.5, -13], [15.5, -15], [16, -12], [17, -14], [18, -16], [14.5, -10.5], [17.5, -11], [19, -13.5], [16.5, -17]];
+    const clearSpot = (x, z) => { // nearest walkable point (never inside rock or a prop)
+      for (let r = 0; r <= 3; r += 0.5) for (let a = 0; a < 6.28; a += 0.8) {
+        const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r;
+        if (this.nav.man.clear(px, pz)) return [px, pz];
+        if (!r) break;
+      }
+      return [x, z];
+    };
+    spots.forEach(([x0, z0], i) => {
+      const [x, z] = clearSpot(x0, z0);
       const nm = ['Eurylochus', 'Polites', 'Perimedes', 'Elpenor', 'Antiphus', 'Cleitus', 'Lycus', 'Dorion', 'Megon', 'Theon', 'Nicon', 'Aristo'][i].toLowerCase();
       const model = CREW_MODELS.includes(nm) ? nm : CREW_MODELS[i % CREW_MODELS.length];
       const s = new Soldier(scene, { torch: i % 4 === 0, seed: i + 1, model, helmet: [0, 4, 8].includes(i) }); // only three keep their helmets on
       s.home = V(x, floorHeightAt(x, z), z);
       s.root.position.copy(s.home);
-      s.root.rotation.y = Math.random() * 6.28;
+      s.root.rotation.y = Math.PI + (Math.random() - 0.5) * 1.6; // looking up at the sacks
       s.name = ['Eurylochus', 'Polites', 'Perimedes', 'Elpenor', 'Antiphus', 'Cleitus', 'Lycus', 'Dorion', 'Megon', 'Theon', 'Nicon', 'Aristo'][i];
       if (s.torchTip) {
         const l = new THREE.PointLight(0xff8a3a, 20, 12, 1.8); s.torchTip.add(l); s.torchLight = l;
@@ -133,6 +144,7 @@ export class Game {
       this.soldiers.push(s);
     });
     equipSwords(this);
+    setupCheeseCrew(this, clearSpot); // everyone starts raiding the cheese store
     this.onProgress?.(0.85);
 
     // the flock (the film used 40 sheep; 10 keeps the cave readable and the frame light)
@@ -146,7 +158,7 @@ export class Game {
 
     // Metal Gear / GTA systems
     this.VIEW_DOT = 0.2; this.VIEW_RANGE = 34;
-    this.CY_WALK_PACE = 0.6; // giant's walking speed (and walk-cycle rate) multiplier
+    this.CY_WALK_PACE = 0.4; // giant's walking speed (and walk-cycle rate) multiplier
     this.noiseRings = [];
     this.isAir = (x, z) => walkable(x, z, 0.3);
     this.radar = new Radar(this);
@@ -239,8 +251,10 @@ export class Game {
     this.say('We followed the sheep and found this… There are bags of cheese hanging on the walls', 5, 'Polites');
     await this.wait(6);
     this.say('Food. Take as much as we can carry back to the ships', 4, 'Eurylochus');
-    // wait for the player to explore a bit or the timer
-    await Promise.race([this.wait(30), this.until(() => this.player.pos.z < 4 || this.player.pos.z > 14)]);
+    // a good while to explore and watch the men gorge themselves before he comes home:
+    // at least 45 s, then he returns once the player has reached the cheese store (or 30 s more at the latest)
+    await this.wait(45);
+    await Promise.race([this.wait(30), this.until(() => Math.hypot(this.player.pos.x - 14, this.player.pos.z + 13) < 8)]);
     // the giant returns
     this.audio.stomp(V(0, 0, 45), 1.2); this.player.shake = 0.6;
     this.audio.boom?.('quake', 1);
@@ -251,8 +265,9 @@ export class Game {
     await this.wait(1.4);
     this.cy.root.visible = true;
     this.audio.boom?.('arrival', 1.2);
-    this.placeCy(V(tunnelCenterX(17.8), 0, 17.8)); this.cy.crouch = 1; this.cy.squat = 1.6; this.cyState.heading = this.cy.root.rotation.y = Math.PI;
+    this.placeCy(V(tunnelCenterX(17.8), 0, 17.8)); this.cy.crouch = 1; this.cy.squat = 0.35; this.cyState.heading = this.cy.root.rotation.y = Math.PI;
     this.cyState.mode = 'script';
+    endCheese(this);
     this.soldiers.forEach((s) => { s.state = 'hide'; });
     this.setTension(0.6);
     this.say('Hide!', 2, 'Odysseus');
@@ -278,12 +293,12 @@ export class Game {
   async closeBoulder() {
     const W = this.world, b = W.boulder, cy = this.cy, st = this.cyState, slab = b.children[0], r = cy.root;
     const from = b.position.clone(), to = W.doorClosed.clone(), rot0 = b.rotation.clone();
-    const s = cy.height / 13, X = V(1, 0, 0), Y = V(0, 1, 0), Z = V(0, 0, 1);
+    const sw = cy.height / 13, s = sw / b.scale.x, X = V(1, 0, 0), Y = V(0, 1, 0), Z = V(0, 0, 1);
     const rc = new THREE.Raycaster();
     const L2W = (v) => b.localToWorld(v.clone());
     const dirW = (v) => v.clone().applyQuaternion(b.quaternion).normalize();
     b.updateMatrixWorld(true);
-    const surf = (o, d) => { rc.set(L2W(o), dirW(d)); rc.far = 14; const h = rc.intersectObject(slab, false)[0]; return h ? b.worldToLocal(h.point.clone()) : o.clone(); };
+    const surf = (o, d) => { rc.set(L2W(o), dirW(d)); rc.far = 40; const h = rc.intersectObject(slab, false)[0]; return h ? b.worldToLocal(h.point.clone()) : o.clone(); };
     const edgeX = (y) => surf(V(-12, y, 0), X).x;
     const hand = 0.42 * s; // wrist sits this far off the rock
     // grip sets: stand point (slab-local, on the floor), heading offset and per-hand wrist / finger / palm directions
@@ -293,11 +308,11 @@ export class Game {
       R: { at: surf(V(e1 + 0.9, 4.8, 5), Z.clone().negate()).add(V(-0.35, 0, hand)), fingers: X, palm: Z.clone().negate(), grip: 0.55 },
       L: { at: surf(V(e1b + 0.9, 3.6, -5), Z).add(V(-0.35, 0, -hand)), fingers: X, palm: Z, grip: 0.55 },
     };
-    const e3 = edgeX(4.4);
+    const e3 = edgeX(5.6); // chest height: where the push clip's hands are
     const hook = {
-      stand: V(e3 + 1.6 * s, 0, -3.3 * s), face: Z,
-      R: { at: V(e3 - hand, 4.4, -0.15), fingers: Z.clone().addScaledVector(X, 0.25), palm: X, grip: 0.8 },
-      L: { at: surf(V(e3 + 2.9, 3.4, -5), Z).add(V(0, 0, -hand)), fingers: Y.clone().addScaledVector(X, -0.3), palm: Z, grip: 0.25 },
+      stand: V(e3 - 0.8 * s, 0, -3.3 * s), face: Z,
+      R: { at: V(e3 - hand, 5.6, -0.15), fingers: Z.clone().addScaledVector(X, 0.25), palm: X, grip: 0.8 },
+      L: { at: surf(V(e3 + 1.1, 4.4, -5), Z).add(V(0, 0, -hand)), fingers: Y.clone().addScaledVector(X, -0.3), palm: Z, grip: 0.25 },
     };
     const headingOf = (f) => { const d = dirW(f); return Math.atan2(d.x, d.z); };
     const standW = (g) => { const p = L2W(g.stand); p.y = floorHeightAt(p.x, p.z); return p; };
@@ -312,7 +327,7 @@ export class Game {
       st.heading = r.rotation.y = headingOf(g.face);
       for (const side of ['R', 'L']) {
         const h = g[side], ik = cy.ik[side] || (cy.ik[side] = { target: V(), w: 0 });
-        ik.target.copy(L2W(h.at)); ik.w = w[side] ?? w;
+        ik.target.copy(L2W(h.at)); ik.w = w[side] ?? w; ik.noSquat = true; // posture comes from the clip
         ik.aim = { fingers: dirW(h.fingers), palm: dirW(h.palm) };
       }
       cy.grip = g.R.grip * (w.R ?? w); cy.gripL = g.L.grip * (w.L ?? w); cy.gripSign = 1;
@@ -337,12 +352,14 @@ export class Game {
       for (let t = 0; t <= dur; t += 1 / 30) { await frame(); const u = THREE.MathUtils.smoothstep(t / dur, 0, 1); hold(g, on ? u : 1 - u); }
     };
     // hauls: the body leads (arms straighten, he throws his weight back), then the stone follows with a grinding lurch
-    const haul = async (g, k0, k1, dur, away) => {
+    // body: the mocap pushing loop (played backwards while he hauls the stone towards himself)
+    const haul = async (g, k0, k1, dur, away, push = 1) => {
+      cy.play(cy.actions.m_push ? 'm_push' : 'idle', 0.35, push * 0.55);
       for (let t = 0; t < dur; t += 1 / 30) {
         await frame();
         const u = t / dur, ks = THREE.MathUtils.smoothstep(u, 0.12, 1), kb = THREE.MathUtils.smoothstep(u, 0, 0.85);
         place(k0 + (k1 - k0) * ks);
-        hold(g, 1, away.clone().multiplyScalar(0.55 * s * (kb - ks)));
+        hold(g, 1, away.clone().multiplyScalar(0.55 * sw * (kb - ks)));
         this.player.shake = Math.max(this.player.shake, 0.3 + 0.2 * Math.sin(u * Math.PI));
         if (Math.random() < 0.35 * (ks - kb + 1)) this.particles.dust(L2W(V(THREE.MathUtils.lerp(-5, 5, Math.random()), 0.3, (Math.random() - 0.5) * 2)), 3, 2);
       }
@@ -372,22 +389,24 @@ export class Game {
       if (stepping) { cy.play('idle', 0.4, 0.5); this.stomp(); }
     };
 
-    // 1. walk to the edge and clamp it
+    // 1. walk up to the edge sticking out of the wall, hook it and lean into the stone (the mocap push loop drives
+    //    his legs and back; the hands are pinned to the rock by IK)
     st.walkTarget = null;
-    await walk(standW(pinch), headingOf(pinch.face), 3.6);
-    cy.play('idle', 0.4, 0.5);
-    await reach(pinch, 0.5, true);
-    this.audio.rumble(4, 1.1);
-    // 2. two backward hauls drag it out of its niche
-    const kA = 0.34;
-    await haul(pinch, 0, kA, 1.5, pullDir);
-    // 3. step round to the cave side, walking the hands along the stone to hook the edge
-    await regrip(pinch, hook, 1.1, 1.2 * s, true);
+    cy.noDuck = true; // the widened entrance is tall enough: no ducking while he works the stone
+    await walk(standW(hook), headingOf(hook.face), 3.6);
+    if (cy.actions.m_push) cy.play('m_push', 0.4, 0.05);
+    await reach(hook, 0.5, true);
     // 4. three heaves drag it across the entrance; the right hand shifts onto the face before the edge buries itself in the far wall
     this.audio.rumble(6, 1.3);
     const side = dirW(X.clone().negate()).setY(0).normalize();
-    await haul(hook, kA, 0.78, 1.4, side);
-    const shove = { ...hook, R: { ...hook.L, at: hook.L.at.clone().add(V(-0.9, 1.5, 0)), grip: 0.25 } };
+    await haul(hook, 0, 0.4, 1.4, side);
+    await haul(hook, 0.4, 0.78, 1.4, side);
+    // for the last shove he shifts away from the far wall: both palms flat on the face, further along
+    const shove = {
+      stand: hook.stand.clone().add(V(3.2, 0, 0)), face: Z,
+      R: { ...hook.L, at: hook.L.at.clone().add(V(-0.5, 1.1, 0)), grip: 0.25 },
+      L: { ...hook.L, at: surf(V(e3 + 5.0, 5.0, -5), Z).add(V(0, 0, -hand)) },
+    };
     await regrip(hook, shove, 0.4, 0.8 * s, false);
     await haul(shove, 0.78, 1, 0.9, side);
     place(1);
@@ -404,13 +423,14 @@ export class Game {
         await frame();
         const u = THREE.MathUtils.smoothstep(t / 0.4, 0, 1);
         for (const [sd, sg] of [['R', -1], ['L', 1]]) {
-          const tuck = r.position.clone().addScaledVector(f, 2.2 * s).addScaledVector(rt, sg * 0.9 * s).add(V(0, 3.2 * s, 0));
-          const ik = cy.ik[sd]; ik.target.lerpVectors(start[sd], tuck, u); ik.w = 1 - u * (1 - (cy.crouch || 0)); ik.aim = null;
+          const tuck = r.position.clone().addScaledVector(f, 2.2 * sw).addScaledVector(rt, sg * 0.9 * sw).add(V(0, 3.2 * sw, 0));
+          const ik = cy.ik[sd]; ik.target.lerpVectors(start[sd], tuck, u); ik.w = 1 - u; ik.aim = null;
         }
         cy.grip = cy.gripL = 0.3 * (1 - u);
       }
     }
-    cy.ik.R = cy.ik.L = null; cy.grip = cy.gripL = 0; cy.lookAt = null;
+    cy.ik.R = cy.ik.L = null; cy.grip = cy.gripL = 0; cy.lookAt = null; cy.noDuck = false;
+    cy.play('idle', 0.5);
     b.rotation.copy(rot0);
     this.physics.rebuildDynamic();
   }
@@ -710,6 +730,7 @@ export class Game {
     await this.wait(1.6);
     // outside, looking back at the cave mouth
     this.setDaylight(1.4);
+    this.post.grade.uniforms.get('uCave').value = 0;
     this.world.sky.material.uniforms.uBright.value = 0.28;
     this.scene.fog.density = 0.006; this.scene.fog.color.set(0x3d5358);
     this.world.hemi.intensity = 1.2; this.world.hemi.color.set(0x9ec4d0); this.world.hemi.groundColor.set(0x3a3322);
@@ -771,7 +792,8 @@ export class Game {
       // walking pace is slowed down to read as a heavy giant (running stays as it was)
       const run = st.walkSpeed > 3, pace = run ? 1 : this.CY_WALK_PACE;
       let sp = (final ? Math.min(st.walkSpeed, dist * 1.5) : st.walkSpeed) * pace;
-      if (st.hurt > 0) sp *= 0.15; // an arrow just went in: he stops short and clutches it
+      if (st.hurt > 0) sp *= 0.15;
+      if ((this.cy.sitW || 0) > 0.15) sp = 0; // still getting up off the floor // an arrow just went in: he stops short and clutches it
       const dx = (d.x / Math.max(dist, 1e-4)) * sp * dt, dz = (d.z / Math.max(dist, 1e-4)) * sp * dt;
       if (inSlot) { r.position.x += dx; r.position.z += dz; st.blockedT = 0; }
       else if (nav.step(r.position, dx, dz)) st.blockedT = 0;
@@ -1116,6 +1138,7 @@ export class Game {
 
   cyThink(dt) {
     const st = this.cyState, P = this.player, cy = this.cy;
+    if (st.walkTarget || st.grabbing || this._eating) st.busyBefore = true;
     if (!st.grabbing && !this._eating && !P.grabbed) cy.forceSquat = 0;
     else if (P.grabbed) cy.forceSquat = 0.3;
     if (st.stun > 0) {
@@ -1172,10 +1195,13 @@ export class Game {
           if (dP < 7.5 && !st.grabbing && !P.dead) this.tryGrabPlayer();
           else { st.alert = 0.6; if (st.mode === 'blind') this.sweepArms(); }
         }
-      } else if (!st.walkTarget && !st.grabbing) {
-        // idle behaviour: tend the fire / wander (blind: grope around)
+      } else if (!st.walkTarget && !st.grabbing && !this._eating && !st.fidget) {
+        // idle behaviour: after every action a pause / fidget, then tend the fire / wander (blind: grope around)
+        if (st.busyBefore) { st.busyBefore = false; st.idleT = 0.6 + Math.random() * 0.8; st.fidgetNext = true; }
         st.idleT = (st.idleT || 0) - dt;
-        if (st.idleT < 0) {
+        if (st.idleT < 0 && st.fidgetNext && st.alert < 0.35) { st.fidgetNext = false; this.cyFidget(); }
+        else if (st.idleT < 0) {
+          st.fidgetNext = true;
           st.idleT = 6 + Math.random() * 8;
           const home = st.home || V(-3, 0, 1);
           const a = Math.random() * 6.28, r = 3 + Math.random() * 7;
@@ -1426,6 +1452,86 @@ export class Game {
     }
   }
 
+  // idle fidgets between actions: stand still and look around, scratch his backside, pick his nose, or sit down for a while
+  async cyFidget(kind) {
+    const st = this.cyState, cy = this.cy, H = cy.height, km = H / 1.95;
+    if (st.fidget || st.lying) return;
+    kind ||= ['pause', 'scratch', 'nose', 'sit', 'scratch', 'nose', 'sit'][(Math.random() * 7) | 0];
+    if (st.mode === 'blind' && kind === 'nose') kind = 'scratch';
+    st.fidget = kind;
+    const V3 = () => new THREE.Vector3();
+    const stop = () => st.alert > 0.6 || st.stun > 0 || st.hurt > 0 || st.walkTarget || st.grabbing || this._eating || this.player.grabbed || !(st.mode === 'tend' || st.mode === 'blind');
+    const fwd = () => V3().set(Math.sin(cy.root.rotation.y), 0, Math.cos(cy.root.rotation.y));
+    const rightOf = () => cy.bones.RightUpLeg.getWorldPosition(V3()).sub(cy.bones.Hips.getWorldPosition(V3())).setY(0).normalize();
+    let ik = null, side = 'R';
+    const grab = (sd) => { if (cy.ik[sd]) return null; side = sd; ik = cy.ik[sd] = { target: cy.handWorld(sd), w: 0, free: true, noSquat: true }; return ik; };
+    const release = async () => {
+      for (let t = 0; t < 0.5 && ik && cy.ik[side] === ik; t += 1 / 30) { ik.w = Math.max(0, ik.w - 1 / 15); await this.wait(1 / 30); }
+      if (ik && cy.ik[side] === ik) cy.ik[side] = null;
+    };
+    try {
+      if (kind === 'pause') {
+        // stand and look slowly left and right
+        const dur = 2.5 + Math.random() * 2.5, h0 = st.heading;
+        for (let t = 0; t < dur && !stop(); t += 1 / 30) { await this.wait(1 / 30); st.heading = h0 + Math.sin(t * 1.3) * 0.5; }
+        st.heading = h0;
+      } else if (kind === 'scratch') {
+        // reach round behind and scratch the backside
+        const sd = Math.random() < 0.5 ? 'R' : 'L';
+        if (!grab(sd)) return;
+        const dur = 2.8 + Math.random() * 1.5;
+        for (let t = 0; t < dur && !stop() && cy.ik[side] === ik; t += 1 / 30) {
+          await this.wait(1 / 30);
+          const hips = cy.bones.Hips.getWorldPosition(V3()), rt = rightOf().multiplyScalar(sd === 'R' ? 1 : -1);
+          ik.target.copy(hips).addScaledVector(fwd(), -0.16 * km).addScaledVector(rt, 0.075 * km).add(V3().set(0, -0.07 * km + Math.sin(t * 16) * 0.035 * km, 0));
+          ik.w = Math.min(1, t / 0.6);
+          cy.lookAt = null;
+        }
+        await release();
+      } else if (kind === 'nose') {
+        // finger up the nose, dig around, then look at what he found and flick it away
+        if (!grab('R')) return;
+        const dur = 4 + Math.random() * 1.5;
+        const nose = () => cy.eyeGroup.localToWorld(V3().set(0, -0.075, 0.03));
+        for (let t = 0; t < dur && !stop() && cy.ik.R === ik; t += 1 / 30) {
+          await this.wait(1 / 30);
+          const f = fwd();
+          if (t < dur - 1.6) {
+            ik.target.copy(nose()).addScaledVector(f, 0.07 * km).add(V3().set(Math.sin(t * 9) * 0.01 * km, -0.1 * km + Math.cos(t * 11) * 0.012 * km, 0));
+            cy.lookAt = null;
+          } else {
+            // hand out in front of the eye: inspect, then a flick
+            const k = t - (dur - 1.6);
+            ik.target.copy(cy.eyeWorld()).addScaledVector(f, 0.28 * km).add(V3().set(0, -0.12 * km + (k > 1.2 ? Math.sin((k - 1.2) * 20) * 0.04 * km : 0), 0));
+            cy.lookAt = ik.target.clone().add(V3().set(0, 0.08 * km, 0));
+          }
+          ik.w = Math.min(1, t / 0.7); cy.point = ik.w;
+        }
+        cy.lookAt = null; cy.point = 0;
+        await release();
+      } else if (kind === 'sit') {
+        // sit down on the floor for a while, hands resting on the knees
+        if (cy._hipH == null || cy._hipH === H * 0.5) cy._hipH = cy.bones.Hips.getWorldPosition(V3()).y - cy.root.position.y;
+        cy.sitTarget = 1;
+        this.audio.stomp?.(cy.root.position, 0.4);
+        const dur = 7 + Math.random() * 6;
+        for (let t = 0; t < dur && !stop(); t += 1 / 30) {
+          await this.wait(1 / 30);
+          if (t > 2.2 && !st._sitThud) { st._sitThud = true; this.stomp(); }
+        }
+        st._sitThud = false;
+        cy.sitTarget = 0;
+        await this.until(() => (cy.sitW || 0) < 0.15);
+      }
+    } finally {
+      if (cy.ik[side] === ik && ik) cy.ik[side] = null;
+      if (kind === 'nose') { cy.lookAt = null; cy.point = 0; }
+      if (kind === 'sit') cy.sitTarget = 0;
+      st.fidget = null;
+      st.idleT = Math.min(st.idleT || 0, 1 + Math.random() * 2);
+    }
+  }
+
   // pain reaction: flinch, stop for a moment, and press a free hand over the arrow
   async cyHurt(zone, at) {
     const cy = this.cy, st = this.cyState;
@@ -1508,6 +1614,7 @@ export class Game {
   // ------------------------------------------------------------------ soldiers
   updateSoldiers(dt, t) {
     const cp = this.cy.root.position;
+    const giantIn = this.cy.root.visible;
     updateSquad(this, dt);
     for (const s of this.soldiers) {
       if (!s.alive) continue;
@@ -1537,10 +1644,8 @@ export class Game {
         if (s.crawlDelay < 0) { target = this.flock.exitPoint ? this.flock.exitPoint.clone() : null; speed = 1.1; anim = 'walk'; }
         if (r.position.z > this.world.doorClosed.z + 3) { r.visible = false; s.escaped = true; continue; }
       } else if (this.phase === 'intro') {
-        // wander around the cheese
-        s.wT = (s.wT || Math.random() * 5) - dt;
-        if (s.wT < 0) { s.wT = 4 + Math.random() * 6; s.goal = s.home.clone().add(V((Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4)); }
-        if (s.goal && r.position.distanceTo(s.goal) > 0.5) { target = s.goal; speed = 1.1; anim = 'walk'; }
+        // raiding the cheese: reaching for the sacks or eating round the wheels
+        const c = cheeseStep(this, s, dt); target = c.target; speed = c.speed || speed; anim = c.anim;
       }
       if (target) {
         const d = flat(target).sub(flat(r.position)); const dist = d.length();
@@ -1558,13 +1663,27 @@ export class Game {
           // stuck detection: if he barely moved for a while, give up on this target
           const moved = Math.hypot(r.position.x - ox, r.position.z - oz);
           s.stuckT = moved < speed * dt * 0.3 ? (s.stuckT || 0) + dt : 0;
-          if (s.stuckT > 0.6) { s.stuckT = 0; s.goal = null; s.path = null; s.home = r.position.clone(); anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle'; }
+          // (in a fight the squad keeps re-issuing the same blocked post: pick a new one instead of flashing one idle frame
+          // between run cycles every 0.6 s)
+          if (s.stuckT > 0.6) {
+            s.stuckT = 0; s.goal = null; s.path = null;
+            if (s.state === 'fight') { s.post = null; s.postT = 0; }
+            else { s.home = r.position.clone(); anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle'; }
+          }
           // face where he is really going (smoothed velocity), not the raw waypoint: sliding along a wall
           // or a path corner flips the waypoint direction frame to frame and made him shiver on the spot
           if (moved > 1e-4) { const k = Math.min(1, dt * 8); s._vx = (s._vx || 0) * (1 - k) + (r.position.x - ox) / dt * k; s._vz = (s._vz || 0) * (1 - k) + (r.position.z - oz) / dt * k; }
           const fx = Math.hypot(s._vx || 0, s._vz || 0) > 0.2 ? s._vx : d.x, fz = Math.hypot(s._vx || 0, s._vz || 0) > 0.2 ? s._vz : d.z;
-          const h = Math.atan2(fx, fz); let dh = h - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); r.rotation.y += dh * Math.min(1, dt * 6);
+          if (!giantIn) { const h = Math.atan2(fx, fz); let dh = h - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); r.rotation.y += dh * Math.min(1, dt * 6); }
         }
+      }
+      // once the giant is inside, every man keeps his eyes on him whatever he is doing (backs away, sidesteps, charges)
+      s.back = false;
+      if (giantIn) {
+        const g = flat(cp).sub(flat(r.position)), h = Math.atan2(g.x, g.z);
+        let dh = h - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); r.rotation.y += dh * Math.min(1, dt * 8);
+        const vx = s._vx || 0, vz = s._vz || 0, vl = Math.hypot(vx, vz);
+        s.back = vl > 0.3 && (vx * Math.sin(r.rotation.y) + vz * Math.cos(r.rotation.y)) / vl < -0.3; // moving away from where he looks
       }
       let sp = Math.hypot(r.position.x - (s._px ?? r.position.x), r.position.z - (s._pz ?? r.position.z)) / Math.max(dt, 1e-4);
       s._px = r.position.x; s._pz = r.position.z;
@@ -1575,8 +1694,10 @@ export class Game {
       s._moving = s._sp > (s._moving ? 0.12 : 0.35);
       if (!s._moving) { s._vx = 0; s._vz = 0; }
       if ((anim === 'walk' || anim === 'run') && !s._moving) anim = s.state === 'crawlOut' ? 'sneak_pose' : 'idle';
-      s.play(anim, 0.3, anim === 'walk' ? Math.max(0.5, s._sp / 1.3) : anim === 'run' ? Math.max(0.6, s._sp / 4) : 1);
+      const rate = anim === 'walk' ? Math.max(0.5, s._sp / 1.3) : anim === 'run' ? Math.max(0.6, s._sp / 4) : 1;
+      s.play(anim, 0.3, s.back && (anim === 'walk' || anim === 'run') ? -rate : rate); // backpedal: gait played in reverse
       if (s.state === 'crawlOut') { r.scale.y = r.scale.x * 0.6; } // hunched under straw
+      if (s.chore && this.phase === 'intro' && s.state === 'idle') { s.mixer.update(0); poseCheese(this, s, t); }
       if (s.torchLight) s.torchLight.intensity = 16 + Math.sin(t * 17 + s.home.x) * 3;
     }
     updateCrewFight(this);
@@ -1784,6 +1905,10 @@ export class Game {
     done.forEach((k) => k.r());
 
     this.wheel.update(this.input);
+    // the giant looming over you: tell the camera so it can pull back and show more than his feet
+    { const cyOn = this.cy.root.visible && this.cyState.mode !== 'sleep';
+      const d = cyOn ? flat(this.cy.root.position).distanceTo(flat(this.player.pos)) : 99;
+      this.player.giantNear = 1 - THREE.MathUtils.smoothstep(d, 7, 18); }
     this.player.update(dt, t, dtReal);
     if (this.camOverride) { this.camera.position.copy(this.camOverride); this.camera.lookAt(this.camTarget); }
     else this.updateEatCam(dt);
@@ -1803,10 +1928,10 @@ export class Game {
     }
     if (this.cy.root.visible) {
       if (this.cyState.mode !== 'sleep' && this.cyState.mode !== 'gate') this.cyMove(dt);
-      // the entrance tunnel is only ~8 m high past its mouth: the giant ducks to pass through it
-      const cz = this.cy.root.position.z, wantCrouch = THREE.MathUtils.smoothstep(cz, 12.3, 14.3);
+      // in the entrance tunnel the giant stoops a little
+      const cz = this.cy.root.position.z, wantCrouch = this.cy.noDuck ? 0 : THREE.MathUtils.smoothstep(cz, 12.3, 14.3);
       this.cy.crouch = (this.cy.crouch || 0) + (wantCrouch - (this.cy.crouch || 0)) * Math.min(1, dt * 3);
-      this.cy.crouchDepth = 1.6;
+      this.cy.crouchDepth = 0.35; // the widened entrance only needs a slight stoop
       this.cyThink(dt);
       this.cy.update(dt);
     }

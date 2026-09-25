@@ -101,6 +101,11 @@ export function updateCower(G, s, dt) {
   const dist = Math.hypot(r.position.x - spot.pos.x, r.position.z - spot.pos.z);
   if (s.sitting) {
     if (dist > 0.6) { standUp(s); s.cowerSpot = null; return false; } // moved (e.g. swapped bodies)
+    // keep facing the giant, but never swing round into the rock behind him (at most 90 deg off the wall's normal)
+    const cp = G.cy.root.position;
+    let off = Math.atan2(cp.x - r.position.x, cp.z - r.position.z) - spot.yaw; off = Math.atan2(Math.sin(off), Math.cos(off));
+    off = Math.max(-1.57, Math.min(1.57, off));
+    let dh = spot.yaw + off - r.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); r.rotation.y += dh * Math.min(1, dt * 3);
     return true;
   }
   // creep over to the wall (the regular hide logic walks him home), then sit

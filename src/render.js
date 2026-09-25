@@ -9,7 +9,7 @@ import { N8AOPostPass } from 'n8ao';
 class FilmGradeEffect extends Effect {
   constructor() {
     super('FilmGrade', `
-      uniform float uTime; uniform float uShake; uniform float uFlash; uniform float uFilter; uniform float uExposure;
+      uniform float uTime; uniform float uShake; uniform float uFlash; uniform float uFilter; uniform float uExposure; uniform float uCave;
       vec3 filmic(vec3 c){
         float l = dot(c, vec3(0.2126,0.7152,0.0722));
         vec3 shadowTint = vec3(0.86,1.0,1.04);
@@ -21,6 +21,14 @@ class FilmGradeEffect extends Effect {
       }
       void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor){
         vec3 c = filmic(inputColor.rgb);
+        // cave grade: cold blue, darker. Shadows and mids go blue, the firelit highlights keep some warmth
+        {
+          float cl = dot(c, vec3(0.2126,0.7152,0.0722));
+          vec3 cool = mix(vec3(cl), c, 0.75) * vec3(0.82, 0.92, 1.1); // (was 0.55 / 0.66,0.86,1.28: too pale and blue)
+          vec3 cg = mix(cool, c * vec3(1.0, 0.97, 0.94), smoothstep(0.4, 1.0, cl));
+          cg *= 0.8;
+          c = mix(c, cg, uCave);
+        }
         // halation: red glow around bright areas approximated from the pixel itself
         float l = dot(c, vec3(0.3,0.6,0.1));
         c += vec3(0.06,0.012,0.0) * smoothstep(0.7, 1.0, l);
@@ -31,7 +39,7 @@ class FilmGradeEffect extends Effect {
         else if (uFilter > 1.5 && uFilter < 2.5) c = mix(c, g * vec3(1.35, 0.85, 0.45), 0.55);     // firelight
         else if (uFilter > 2.5) c = mix(c, g * vec3(0.55, 0.95, 1.15), 0.6);                       // teal night
         outputColor = vec4(c, inputColor.a);
-      }`, { uniforms: new Map([['uTime', new THREE.Uniform(0)], ['uShake', new THREE.Uniform(0)], ['uFlash', new THREE.Uniform(0)], ['uFilter', new THREE.Uniform(0)], ['uExposure', new THREE.Uniform(0)]]) });
+      }`, { uniforms: new Map([['uTime', new THREE.Uniform(0)], ['uShake', new THREE.Uniform(0)], ['uFlash', new THREE.Uniform(0)], ['uFilter', new THREE.Uniform(0)], ['uExposure', new THREE.Uniform(0)], ['uCave', new THREE.Uniform(1)]]) });
   }
 }
 

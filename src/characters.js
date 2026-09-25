@@ -46,6 +46,8 @@ export async function loadCharacterAssets() {
   for (const g of [SOL, ODY, ...Object.values(CREW)]) {
     g.clips.push(...retargetClips(SkeletonUtils.clone(ualRoot), ualClips, SkeletonUtils.clone(g.scene), 30, { hipsMotion: true, chain: true }));
   }
+  // the giant gets the mocap pushing loop for the door-stone scene
+  CYC.clips.push(...retargetClips(SkeletonUtils.clone(ualRoot), ualClips.filter((c) => c.name === 'm_push'), SkeletonUtils.clone(CYC.scene), 30, { hipsMotion: true, chain: true }));
 }
 // UAL (Rigify DEF-*) -> Mixamo bone names, after GLTFLoader's node-name sanitising (dots removed)
 const UAL_BONES = {
@@ -55,10 +57,28 @@ const UAL_BONES = {
   'DEF-thighL': 'LeftUpLeg', 'DEF-shinL': 'LeftLeg', 'DEF-footL': 'LeftFoot', 'DEF-toeL': 'LeftToeBase',
   'DEF-thighR': 'RightUpLeg', 'DEF-shinR': 'RightLeg', 'DEF-footR': 'RightFoot', 'DEF-toeR': 'RightToeBase',
 };
-const UAL_CLIPS = { m_idle: 'Idle_Loop', m_walk: 'Walk_Loop', m_jog: 'Jog_Fwd_Loop', m_sprint: 'Sprint_Loop', m_crouch: 'Crouch_Fwd_Loop', m_crouch_idle: 'Crouch_Idle_Loop', m_jump: 'Jump_Loop' };
+const UAL_CLIPS = { m_idle: 'Idle_Loop', m_walk: 'Walk_Loop', m_jog: 'Jog_Fwd_Loop', m_sprint: 'Sprint_Loop', m_crouch: 'Crouch_Fwd_Loop', m_crouch_idle: 'Crouch_Idle_Loop', m_jump: 'Jump_Loop', m_push: 'Push_Loop' };
 // ground speed (m/s) of the planted foot in each m_* loop at timeScale 1 on a ~1.75 m body (measured on Odysseus):
 // timeScale = speed / LOCO_SPEED keeps the feet from sliding
 export const LOCO_SPEED = { m_walk: 0.95, m_jog: 4.6, m_sprint: 6.1, m_crouch: 0.62 };
+
+// *_pose clips are a held pose baked into a few frames, and the retargeted copies end on a different frame
+// than they start. Looped, that flicked between the two every frame (standing men shivered in sneak_pose).
+// Flatten every key onto the first so the loop is truly still.
+const _still = new WeakMap();
+function stillPose(clip) {
+  if (clip.duration > 0.2) return clip;
+  let c = _still.get(clip);
+  if (!c) {
+    c = clip.clone();
+    for (const t of c.tracks) {
+      const n = t.getValueSize(), v = (t.values = t.values.slice());
+      for (let i = n; i < v.length; i++) v[i] = v[i % n];
+    }
+    _still.set(clip, c);
+  }
+  return c;
+}
 
 // Realistic MakeHuman body (Mixamo-named rig) with the Mixamo clips
 function cloneHuman(src, height, modelHeight) {
@@ -68,7 +88,7 @@ function cloneHuman(src, height, modelHeight) {
   root.add(inner);
   const mixer = new THREE.AnimationMixer(inner);
   const actions = {};
-  for (const clip of src.clips || CLIPS) actions[clip.name] = mixer.clipAction(clip);
+  for (const clip of src.clips || CLIPS) actions[clip.name] = mixer.clipAction(stillPose(clip));
   return { root, mixer, actions, scale: height / modelHeight };
 }
 
@@ -89,7 +109,7 @@ function cloneRig(height) {
   root.scale.setScalar(s);
   const mixer = new THREE.AnimationMixer(root);
   const actions = {};
-  for (const clip of XBOT.animations) actions[clip.name] = mixer.clipAction(clip);
+  for (const clip of XBOT.animations) actions[clip.name] = mixer.clipAction(stillPose(clip));
   return { root, mixer, actions, scale: s };
 }
 
@@ -295,10 +315,24 @@ export class Cyclops {
     this.mixer.update(dt);
     this.model.updateMatrixWorld(true);
     let want = Math.max(this.forceSquat || 0, (this.crouch || 0) * (this.crouchDepth || 1.3)); // crouch: ducking through the low entrance tunnel
-    for (const k of ['R', 'L']) { const ik = this.ik[k]; if (ik && ik.w > 0.05) { const ly = ik.target.y - this.root.position.y; want = Math.max(want, THREE.MathUtils.clamp((7.5 - ly) / 7.5, 0, 1) * ik.w); } }
+    for (const k of ['R', 'L']) { const ik = this.ik[k]; if (ik && ik.w > 0.05 && !ik.noSquat) { const ly = ik.target.y - this.root.position.y; want = Math.max(want, THREE.MathUtils.clamp((7.5 - ly) / 7.5, 0, 1) * ik.w); } }
     this.squat += (want - this.squat) * Math.min(1, dt * (want > this.squat && this.forceSquat ? this.squatRate || 2.5 : 2.5));
     if (this.squat > 0.01) { this.poser.squatBend(this.squat * 0.85, this.squat, this.squatSign || 1); this.model.position.y = -this.squat * this.height * 0.22; }
     else this.model.position.y = 0;
+    // sitting on the ground (idle fidget): thighs forward, legs out, pelvis down on the floor, a slight lean back
+    this.sitW = (this.sitW || 0) + ((this.sitTarget || 0) - (this.sitW || 0)) * Math.min(1, dt * 1.1);
+    if (this.sitW > 0.005) {
+      const s = THREE.MathUtils.smoothstep(this.sitW, 0, 1);
+      this.poser.frame(); const R = this.poser.right;
+      const F = this.poser.fwd;
+      for (const [th, sh, sg] of [[this.bones.LeftUpLeg, this.bones.LeftLeg, 1], [this.bones.RightUpLeg, this.bones.RightLeg, -1]]) {
+        rotWorld(th, R, -2.25 * s); rotWorld(th, F, sg * 0.28 * s); // knees up and a little apart
+        rotWorld(sh, R, 2.35 * s); // shins back down, feet flat on the floor
+      }
+      rotWorld(this.bones.Spine, R, -0.12 * s);
+      if (this._hipH == null) this._hipH = this.height * 0.5;
+      this.model.position.y -= (this._hipH - this.height * 0.05) * s;
+    }
     this.model.updateMatrixWorld(true);
     // lying asleep: chin lifted off the chest so the face (and the eye) stays turned out
     if (this.headLift) { this.poser.frame(); rotWorld(this.bones.Neck, this.poser.right, -this.headLift * 0.45); rotWorld(this.bones.Head, this.poser.right, -this.headLift * 0.55); this.model.updateMatrixWorld(true); }
@@ -344,8 +378,13 @@ export class Cyclops {
       this.model.updateMatrixWorld(true);
     }
     this.poser.armsClear({ R: this.ik.R && this.ik.R.w > 0.6, L: this.ik.L && this.ik.L.w > 0.6 });
-    if (this.ik.R) this.poser.reach('R', this.ik.R.target, this.ik.R.w);
-    if (this.ik.L) this.poser.reach('L', this.ik.L.target, this.ik.L.w);
+    // ik.free: the hand may touch his own body (scratching, nose picking), skip the keep-clear push
+    for (const sd of ['R', 'L']) {
+      const ik = this.ik[sd]; if (!ik) continue;
+      const col = this.poser.collide; if (ik.free) this.poser.collide = null;
+      this.poser.reach(sd, ik.target, ik.w);
+      this.poser.collide = col;
+    }
     // ducking: tuck the hands in onto the knees so the arms don't scrape the tunnel walls
     if ((this.crouch || 0) > 0.02) {
       const r = this.root, f = new THREE.Vector3(Math.sin(r.rotation.y), 0, Math.cos(r.rotation.y)), rt = new THREE.Vector3(f.z, 0, -f.x);
@@ -353,7 +392,7 @@ export class Cyclops {
       for (const [side, sgn] of [['R', -1], ['L', 1]]) {
         if (this.ik[side]) continue;
         const tgt = r.position.clone().addScaledVector(f, 2.2 * k).addScaledVector(rt, sgn * 0.9 * k).add(new THREE.Vector3(0, 3.2 * k, 0));
-        this.poser.reach(side, tgt, this.crouch);
+        this.poser.reach(side, tgt, this.crouch * Math.min(1, this.crouchDepth || 1));
       }
     }
     // IK holds can also set the hand's orientation (fingers along aim.fingers, palm onto aim.palm) and curl the fingers
@@ -363,6 +402,13 @@ export class Cyclops {
       const axis = a.sub(b).normalize().multiplyScalar(-(this.gripSign || 1));
       for (const ch of this.lFingers) ch.forEach((bn, i) => rotWorld(bn, axis, this.gripL * [0.9, 1.1, 0.8][i]));
       for (const bn of this.lThumb) rotWorld(bn, axis, this.gripL * 0.4);
+    }
+    // index finger out, the rest curled (nose picking)
+    if ((this.point || 0) > 0.01 && this.rFingers[0]?.length && !(this.grip > 0.01)) {
+      const a = this.rFingers[0][0].getWorldPosition(new THREE.Vector3()), b = this.rFingers[3][0].getWorldPosition(new THREE.Vector3());
+      const axis = a.sub(b).normalize().multiplyScalar(this.gripSign || 1);
+      for (const ch of this.rFingers.slice(1)) ch.forEach((bn, i) => rotWorld(bn, axis, this.point * [0.9, 1.1, 0.8][i]));
+      for (const bn of this.rThumb) rotWorld(bn, axis, this.point * 0.4);
     }
     if (this.grip > 0.01 && this.rFingers[0]?.length) {
       // curl the fingers around what the hand holds (axis runs across the knuckles)

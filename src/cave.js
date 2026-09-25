@@ -7,7 +7,7 @@ export const LAYOUT = {
   chamber: { c: new THREE.Vector3(0, 10, -2), r: new THREE.Vector3(25, 17, 18) },
   alcove: { c: new THREE.Vector3(-13, 5, -13), r: 8.5 },    // cyclops sleeps here
   pen: { c: new THREE.Vector3(14, 4, -9), r: 7.5 },          // sheep pen
-  tunnelZ0: 8, tunnelZ1: 60, tunnelHalfW: 5.2, tunnelH: 13.5,
+  tunnelZ0: 8, tunnelZ1: 60, tunnelHalfW: 9, tunnelH: 21, // wide and tall enough for the giant to walk the entrance nearly upright
   crack: { x: 5.5, z: -3, len: 5.5, w: 0.9, y0: 17 },
   boulderZ: 17.5,
   exitZ: 34,
